@@ -82,7 +82,6 @@
       gap: 0.5rem;
       background: #ffffff;
       border-top: 1px solid #ccc;
-      flex-wrap: nowrap;
     }
 
     textarea {
@@ -106,7 +105,6 @@
       background: #dc2626;
     }
 
-    /* Mobile layout */
     body.mobile #topBar {
       flex-direction: column;
       align-items: stretch;
@@ -185,14 +183,13 @@
   <div id="inputArea">
     <textarea id="userInput" placeholder="Ask something..."></textarea>
     <button onclick="sendMessage()">Send</button>
-    <button onclick="startVoiceInput()">🎤</button>
   </div>
 
   <script>
     let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
     let selectedModel = localStorage.getItem("selectedModel") || "Bolt O4 Nexus";
-    let isVoiceInput = false;
     let voiceModeEnabled = false;
+    let recognition = null;
 
     const chatContainer = document.getElementById('chatContainer');
     const modelSelect = document.getElementById('modelSelect');
@@ -216,6 +213,12 @@
     function toggleVoiceMode() {
       voiceModeEnabled = !voiceModeEnabled;
       toggleVoiceBtn.textContent = voiceModeEnabled ? "Stop Speaking with Bolt" : "Speak with Bolt";
+
+      if (voiceModeEnabled) {
+        startVoiceInput();
+      } else {
+        if (recognition) recognition.stop();
+      }
     }
 
     function renderChat() {
@@ -273,8 +276,6 @@
           speakText(fullText);
         }
 
-        isVoiceInput = false;
-
       } catch (error) {
         bubble.textContent = "Network error: " + error.message;
         botMsg.content = bubble.textContent;
@@ -283,19 +284,27 @@
     }
 
     function startVoiceInput() {
-      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+        alert("Speech recognition not supported in this browser.");
+        return;
+      }
+
+      recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
       recognition.lang = 'en-US';
+      recognition.continuous = true;
       recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
 
       recognition.onresult = function(event) {
-        const voiceText = event.results[0][0].transcript;
-        isVoiceInput = true;
+        const voiceText = event.results[event.results.length - 1][0].transcript;
         sendMessage(voiceText);
       };
 
       recognition.onerror = function(event) {
-        alert('Voice error: ' + event.error);
+        console.error("Voice error: ", event.error);
+      };
+
+      recognition.onend = function() {
+        if (voiceModeEnabled) recognition.start();
       };
 
       recognition.start();
@@ -304,8 +313,6 @@
     function speakText(text) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
-      utterance.rate = 1;
-      utterance.pitch = 1;
       speechSynthesis.speak(utterance);
     }
 
@@ -322,12 +329,9 @@
       }
     });
 
-    const savedLayout = localStorage.getItem("layoutMode");
-    if (savedLayout === "mobile") {
+    if (localStorage.getItem("layoutMode") === "mobile") {
       document.body.classList.add("mobile");
       toggleLayoutBtn.textContent = "Switch to Desktop";
-    } else {
-      toggleLayoutBtn.textContent = "Switch to Mobile";
     }
 
     renderChat();

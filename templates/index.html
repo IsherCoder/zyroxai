@@ -45,6 +45,7 @@
       padding: 0.4rem 0.6rem;
       flex: 1;
       min-width: 100px;
+      cursor: pointer;
     }
 
     #chatContainer {
@@ -110,7 +111,36 @@
       color: #fff;
     }
 
-    /* Mobile layout optimizations */
+    /* === Manual Mobile Layout Toggle === */
+    body.mobile #topBar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    body.mobile #topBar > div {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    body.mobile select,
+    body.mobile #toggleLayout,
+    body.mobile #clearBtn {
+      width: 100%;
+    }
+
+    body.mobile #inputArea {
+      flex-direction: column;
+    }
+
+    body.mobile button {
+      width: 100%;
+    }
+
+    body.mobile .message {
+      max-width: 95%;
+    }
+
+    /* Also keep responsive adjustments */
     @media (max-width: 600px) {
       #topBar {
         flex-direction: column;
@@ -148,7 +178,6 @@
         width: 100%;
       }
     }
-
   </style>
 </head>
 <body>
@@ -161,7 +190,7 @@
         <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
         <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
       </select>
-      <button id="toggleLayout" onclick="toggleLayout()">Switch Layout</button>
+      <button id="toggleLayout" onclick="toggleLayout()">Switch to Mobile</button>
     </div>
     <button id="clearBtn" onclick="clearChat()">Clear</button>
   </div>
@@ -177,14 +206,16 @@
     const chatContainer = document.getElementById('chatContainer');
     const modelSelect = document.getElementById('modelSelect');
     const input = document.getElementById('userInput');
+    const toggleLayoutBtn = document.getElementById('toggleLayout');
 
     let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
     let selectedModel = localStorage.getItem("selectedModel") || "Bolt O4 Nexus";
     modelSelect.value = selectedModel;
 
     function toggleLayout() {
-      document.body.classList.toggle("mobile");
-      localStorage.setItem("layoutMode", document.body.classList.contains("mobile") ? "mobile" : "desktop");
+      const isMobile = document.body.classList.toggle("mobile");
+      localStorage.setItem("layoutMode", isMobile ? "mobile" : "desktop");
+      toggleLayoutBtn.textContent = isMobile ? "Switch to Desktop" : "Switch to Mobile";
     }
 
     function setModel() {
@@ -220,27 +251,40 @@
       chatContainer.appendChild(bubble);
       chatContainer.scrollTop = chatContainer.scrollHeight;
 
-      const res = await fetch("/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ history: chatHistory, selected_model: selectedModel })
-      });
+      try {
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ history: chatHistory, selected_model: selectedModel })
+        });
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
+        if (!res.ok) {
+          bubble.textContent = "Error: " + res.status + " " + res.statusText;
+          botMsg.content = bubble.textContent;
+          localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+          return;
+        }
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        fullText += chunk;
-        bubble.textContent = fullText;
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value);
+          fullText += chunk;
+          bubble.textContent = fullText;
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        botMsg.content = fullText;
+        localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+      } catch (error) {
+        bubble.textContent = "Network error: " + error.message;
+        botMsg.content = bubble.textContent;
+        localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
       }
-
-      botMsg.content = fullText;
-      localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
     }
 
     function clearChat() {
@@ -256,9 +300,10 @@
       }
     });
 
-    // Apply saved layout
+    // Apply saved layout and toggle button text on load
     if (localStorage.getItem("layoutMode") === "mobile") {
       document.body.classList.add("mobile");
+      toggleLayoutBtn.textContent = "Switch to Desktop";
     }
 
     renderChat();

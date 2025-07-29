@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Bolt AI</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <title>Bolt AI </title>
   <style>
     body {
       margin: 0;
@@ -20,36 +19,24 @@
       text-align: center;
       padding: 1rem;
       margin: 0;
-      font-size: 1.2rem;
     }
 
     #topBar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.5rem;
+      padding: 0.5rem 1rem;
       background: #e5e7eb;
-      flex-wrap: wrap;
-      gap: 0.5rem;
     }
 
-    #topBar > div {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      flex: 1;
-    }
-
-    select, #toggleLayout, #clearBtn, #speakToggle, #stopSpeakToggle {
-      font-size: 0.9rem;
-      padding: 0.4rem 0.6rem;
-      min-width: 100px;
-      cursor: pointer;
+    select {
+      font-size: 1rem;
+      padding: 0.5rem;
     }
 
     #chatContainer {
       flex: 1;
-      padding: 0.5rem;
+      padding: 1rem;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -57,13 +44,13 @@
 
     .message {
       max-width: 80%;
-      padding: 0.7rem 1rem;
+      padding: 0.8rem 1rem;
       border-radius: 1rem;
-      margin: 0.4rem 0;
+      margin: 0.5rem 0;
       font-size: 1rem;
       line-height: 1.4;
       word-wrap: break-word;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
     .user {
@@ -78,7 +65,7 @@
 
     #inputArea {
       display: flex;
-      padding: 0.5rem;
+      padding: 1rem;
       gap: 0.5rem;
       background: #ffffff;
       border-top: 1px solid #ccc;
@@ -86,65 +73,40 @@
 
     textarea {
       flex: 1;
-      padding: 0.6rem;
+      padding: 0.75rem;
       border: 1px solid #ccc;
-      border-radius: 8px;
+      border-radius: 10px;
       resize: none;
       font-size: 1rem;
-      height: 2.5rem;
+      height: 2.8rem;
     }
 
     button {
-      padding: 0.6rem 1rem;
+      padding: 0.75rem 1.2rem;
       background: #2563eb;
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 1rem;
       cursor: pointer;
     }
 
-    #clearBtn { background: #dc2626; }
-    #stopSpeakToggle { background: #555; }
-
-    body.mobile #topBar, body.mobile #topBar > div, body.mobile #inputArea {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    body.mobile select,
-    body.mobile #toggleLayout,
-    body.mobile #clearBtn,
-    body.mobile #speakToggle,
-    body.mobile #stopSpeakToggle,
-    body.mobile button {
-      width: 100%;
-    }
-
-    body.mobile .message {
-      max-width: 95%;
+    #clearBtn {
+      background: #dc2626;
     }
   </style>
 </head>
 <body>
   <h1>🤖 Bolt AI by IsherCoder</h1>
-
   <div id="topBar">
-    <div>
-      <select id="modelSelect" onchange="setModel()">
-        <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
-        <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
-        <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
-        <option value="Bolt O2 Polyglot">Bolt O2 Polyglot – Translator</option>
-        <option value="Bolt O1 Pulse">Bolt O1 Pulse – Health Assistant</option>
-      </select>
-      <button id="toggleLayout" onclick="toggleLayout()">Switch to Mobile</button>
-    </div>
-    <div>
-      <button id="speakToggle" onclick="speakWithBolt()">Speak with Bolt</button>
-      <button id="stopSpeakToggle" onclick="stopSpeaking()" style="display: none;">Stop Speaking with Bolt</button>
-      <button id="clearBtn" onclick="clearChat()">Clear</button>
-    </div>
+    <select id="modelSelect" onchange="setModel()">
+      <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
+      <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
+      <option value="Bolt O6 Vita">Bolt O6 Vita – Health & Wellness Specialist</option>
+      <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
+      <option value="Bolt O8 Polyglot">Bolt O8 Polyglot – Elite Translation Companion</option>
+    </select>
+    <button id="clearBtn" onclick="clearChat()">Clear</button>
   </div>
 
   <div id="chatContainer"></div>
@@ -158,45 +120,14 @@
     const chatContainer = document.getElementById('chatContainer');
     const modelSelect = document.getElementById('modelSelect');
     const input = document.getElementById('userInput');
-    const toggleLayoutBtn = document.getElementById('toggleLayout');
 
     let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
     let selectedModel = localStorage.getItem("selectedModel") || "Bolt O4 Nexus";
-    let speechEnabled = false;
-
     modelSelect.value = selectedModel;
-
-    function toggleLayout() {
-      const isMobile = document.body.classList.toggle("mobile");
-      localStorage.setItem("layoutMode", isMobile ? "mobile" : "desktop");
-      toggleLayoutBtn.textContent = isMobile ? "Switch to Desktop" : "Switch to Mobile";
-    }
 
     function setModel() {
       selectedModel = modelSelect.value;
       localStorage.setItem("selectedModel", selectedModel);
-    }
-
-    function speakWithBolt() {
-      speechEnabled = true;
-      document.getElementById('speakToggle').style.display = 'none';
-      document.getElementById('stopSpeakToggle').style.display = 'inline-block';
-    }
-
-    function stopSpeaking() {
-      speechEnabled = false;
-      speechSynthesis.cancel();  // 🔥 This stops Bolt mid-sentence
-      document.getElementById('speakToggle').style.display = 'inline-block';
-      document.getElementById('stopSpeakToggle').style.display = 'none';
-    }
-
-    function speak(text) {
-      if (!speechEnabled) return;
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 1;
-      utterance.pitch = 1;
-      speechSynthesis.speak(utterance);
     }
 
     function renderChat() {
@@ -227,42 +158,33 @@
       chatContainer.appendChild(bubble);
       chatContainer.scrollTop = chatContainer.scrollHeight;
 
-      try {
-        const res = await fetch("/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ history: chatHistory, selected_model: selectedModel })
-        });
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ history: chatHistory, selected_model: selectedModel })
+      });
 
-        if (!res.ok) {
-          bubble.textContent = "Error: " + res.status + " " + res.statusText;
-          botMsg.content = bubble.textContent;
-          localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-          return;
-        }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
 
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let fullText = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value);
-          fullText += chunk;
-          bubble.textContent = fullText;
-          chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        botMsg.content = fullText;
-        localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-        if (speechEnabled) speak(fullText);
-
-      } catch (error) {
-        bubble.textContent = "Network error: " + error.message;
-        botMsg.content = bubble.textContent;
-        localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        fullText += chunk;
+        bubble.textContent = fullText;
+        chatContainer.scrollTop = chatContainer.scrollHeight;
       }
+
+      botMsg.content = fullText;
+      localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+    }
+
+    function clearChat() {
+      chatHistory = [];
+      localStorage.removeItem("chatHistory");
+      renderChat();
     }
 
     input.addEventListener("keydown", (e) => {
@@ -271,14 +193,6 @@
         sendMessage();
       }
     });
-
-    const savedLayout = localStorage.getItem("layoutMode");
-    if (savedLayout === "mobile") {
-      document.body.classList.add("mobile");
-      toggleLayoutBtn.textContent = "Switch to Desktop";
-    } else {
-      toggleLayoutBtn.textContent = "Switch to Mobile";
-    }
 
     renderChat();
   </script>

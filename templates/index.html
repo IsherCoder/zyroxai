@@ -111,7 +111,6 @@
       color: #fff;
     }
 
-    /* Mobile Layout Overrides */
     body.mobile #topBar {
       flex-direction: column;
       align-items: stretch;
@@ -140,7 +139,6 @@
       max-width: 95%;
     }
 
-    /* Responsive Fallback */
     @media (max-width: 600px) {
       #topBar {
         flex-direction: column;
@@ -189,6 +187,8 @@
         <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
         <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
         <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
+        <option value="Bolt O3 Vitalis">Bolt O3 Vitalis – Health & Wellness Guide</option>
+        <option value="Bolt O2 Polyglot">Bolt O2 Polyglot – Multilingual Translator</option>
       </select>
       <button id="toggleLayout" onclick="toggleLayout()">Switch to Mobile</button>
     </div>
@@ -300,7 +300,6 @@
       }
     });
 
-    // Apply layout and button text on load
     const savedLayout = localStorage.getItem("layoutMode");
     if (savedLayout === "mobile") {
       document.body.classList.add("mobile");

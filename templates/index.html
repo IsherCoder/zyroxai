@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Bolt AI – Streaming Chatbot</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    h1 {
+      background: #111827;
+      color: #ffffff;
+      text-align: center;
+      padding: 1rem;
+      margin: 0;
+    }
+
+    #topBar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      background: #e5e7eb;
+    }
+
+    select {
+      font-size: 1rem;
+      padding: 0.5rem;
+    }
+
+    #chatContainer {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 0.8rem 1rem;
+      border-radius: 1rem;
+      margin: 0.5rem 0;
+      font-size: 1rem;
+      line-height: 1.4;
+      word-wrap: break-word;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .user {
+      align-self: flex-end;
+      background-color: #dbeafe;
+    }
+
+    .bot {
+      align-self: flex-start;
+      background-color: #e0e0e0;
+    }
+
+    #inputArea {
+      display: flex;
+      padding: 1rem;
+      gap: 0.5rem;
+      background: #ffffff;
+      border-top: 1px solid #ccc;
+    }
+
+    textarea {
+      flex: 1;
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      resize: none;
+      font-size: 1rem;
+      height: 2.8rem;
+    }
+
+    button {
+      padding: 0.75rem 1.2rem;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    #clearBtn {
+      background: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <h1>🤖 Bolt AI – Streaming Assistant</h1>
+  <div id="topBar">
+    <select id="modelSelect" onchange="setModel()">
+      <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
+      <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
+      <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
+    </select>
+    <button id="clearBtn" onclick="clearChat()">Clear</button>
+  </div>
+
+  <div id="chatContainer"></div>
+
+  <div id="inputArea">
+    <textarea id="userInput" placeholder="Ask something..."></textarea>
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    const chatContainer = document.getElementById('chatContainer');
+    const modelSelect = document.getElementById('modelSelect');
+    const input = document.getElementById('userInput');
+
+    let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+    let selectedModel = localStorage.getItem("selectedModel") || "Bolt O4 Nexus";
+    modelSelect.value = selectedModel;
+
+    function setModel() {
+      selectedModel = modelSelect.value;
+      localStorage.setItem("selectedModel", selectedModel);
+    }
+
+    function renderChat() {
+      chatContainer.innerHTML = "";
+      chatHistory.forEach(msg => {
+        const bubble = document.createElement("div");
+        bubble.className = "message " + (msg.role === "user" ? "user" : "bot");
+        bubble.textContent = msg.content;
+        chatContainer.appendChild(bubble);
+      });
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      const userMsg = { role: "user", content: text };
+      chatHistory.push(userMsg);
+      localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+      input.value = "";
+      renderChat();
+
+      const botMsg = { role: "assistant", content: "" };
+      chatHistory.push(botMsg);
+      const bubble = document.createElement("div");
+      bubble.className = "message bot";
+      chatContainer.appendChild(bubble);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ history: chatHistory, selected_model: selectedModel })
+      });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        fullText += chunk;
+        bubble.textContent = fullText;
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+
+      botMsg.content = fullText;
+      localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+    }
+
+    function clearChat() {
+      chatHistory = [];
+      localStorage.removeItem("chatHistory");
+      renderChat();
+    }
+
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    renderChat();
+  </script>
+</body>
+</html>

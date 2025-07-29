@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Bolt AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       margin: 0;
@@ -19,25 +20,36 @@
       text-align: center;
       padding: 1rem;
       margin: 0;
+      font-size: 1.2rem;
     }
 
     #topBar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.5rem 1rem;
+      padding: 0.5rem;
       background: #e5e7eb;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
 
-    select, #toggleLayout {
-      font-size: 1rem;
-      padding: 0.5rem;
-      margin-right: 0.5rem;
+    #topBar > div {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      flex: 1;
+    }
+
+    select, #toggleLayout, #clearBtn {
+      font-size: 0.9rem;
+      padding: 0.4rem 0.6rem;
+      flex: 1;
+      min-width: 100px;
     }
 
     #chatContainer {
       flex: 1;
-      padding: 1rem;
+      padding: 0.5rem;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -45,13 +57,13 @@
 
     .message {
       max-width: 80%;
-      padding: 0.8rem 1rem;
+      padding: 0.7rem 1rem;
       border-radius: 1rem;
-      margin: 0.5rem 0;
+      margin: 0.4rem 0;
       font-size: 1rem;
       line-height: 1.4;
       word-wrap: break-word;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
     .user {
@@ -62,84 +74,86 @@
     .bot {
       align-self: flex-start;
       background-color: #e0e0e0;
-      white-space: pre-wrap;
     }
 
     #inputArea {
       display: flex;
-      padding: 1rem;
+      padding: 0.5rem;
       gap: 0.5rem;
       background: #ffffff;
       border-top: 1px solid #ccc;
+      flex-wrap: nowrap;
     }
 
     textarea {
       flex: 1;
-      padding: 0.75rem;
+      padding: 0.6rem;
       border: 1px solid #ccc;
-      border-radius: 10px;
+      border-radius: 8px;
       resize: none;
       font-size: 1rem;
-      height: 2.8rem;
+      height: 2.5rem;
     }
 
     button {
-      padding: 0.75rem 1.2rem;
+      padding: 0.6rem 1rem;
       background: #2563eb;
       color: white;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       font-size: 1rem;
       cursor: pointer;
     }
 
     #clearBtn {
       background: #dc2626;
+      color: #fff;
     }
 
-    /* MOBILE LAYOUT OVERRIDE */
-    body.mobile #topBar {
-      flex-direction: column;
-      align-items: stretch;
+    /* Mobile layout optimizations */
+    @media (max-width: 600px) {
+      #topBar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.5rem 0.5rem 0.25rem;
+      }
+
+      #topBar > div {
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+
+      select, #toggleLayout, #clearBtn {
+        width: 100%;
+        margin: 0;
+      }
+
+      #chatContainer {
+        padding: 0.3rem;
+      }
+
+      .message {
+        max-width: 95%;
+        font-size: 0.95rem;
+        padding: 0.6rem 0.8rem;
+      }
+
+      #inputArea {
+        flex-direction: column;
+        gap: 0.3rem;
+        padding: 0.5rem;
+      }
+
+      button {
+        width: 100%;
+      }
     }
 
-    body.mobile select,
-    body.mobile #toggleLayout {
-      width: 100%;
-      margin-bottom: 0.5rem;
-    }
-
-    body.mobile #chatContainer {
-      padding: 0.5rem;
-    }
-
-    body.mobile .message {
-      max-width: 95%;
-      font-size: 0.95rem;
-    }
-
-    body.mobile #inputArea {
-      flex-direction: column;
-    }
-
-    body.mobile button {
-      width: 100%;
-    }
-
-    code {
-      background: #2d2d2d;
-      color: #f1f1f1;
-      display: block;
-      padding: 0.4rem 0.6rem;
-      border-radius: 8px;
-      font-family: monospace;
-      font-size: 0.95rem;
-      margin-bottom: 0.3rem;
-    }
   </style>
 </head>
 <body>
   <h1>🤖 Bolt AI by IsherCoder</h1>
+
   <div id="topBar">
     <div>
       <select id="modelSelect" onchange="setModel()">
@@ -168,15 +182,9 @@
     let selectedModel = localStorage.getItem("selectedModel") || "Bolt O4 Nexus";
     modelSelect.value = selectedModel;
 
-    let currentLayout = localStorage.getItem("layoutMode") || "desktop";
-    if (currentLayout === "mobile") {
-      document.body.classList.add("mobile");
-    }
-
     function toggleLayout() {
       document.body.classList.toggle("mobile");
-      currentLayout = document.body.classList.contains("mobile") ? "mobile" : "desktop";
-      localStorage.setItem("layoutMode", currentLayout);
+      localStorage.setItem("layoutMode", document.body.classList.contains("mobile") ? "mobile" : "desktop");
     }
 
     function setModel() {
@@ -189,15 +197,7 @@
       chatHistory.forEach(msg => {
         const bubble = document.createElement("div");
         bubble.className = "message " + (msg.role === "user" ? "user" : "bot");
-        if (msg.role === "assistant" && msg.content.includes("\n")) {
-          msg.content.split("\n").forEach(line => {
-            const lineElem = document.createElement("code");
-            lineElem.textContent = line;
-            bubble.appendChild(lineElem);
-          });
-        } else {
-          bubble.textContent = msg.content;
-        }
+        bubble.textContent = msg.content;
         chatContainer.appendChild(bubble);
       });
       chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -235,14 +235,7 @@
         if (done) break;
         const chunk = decoder.decode(value);
         fullText += chunk;
-
-        // Live update as line-by-line <code> blocks
-        bubble.innerHTML = '';
-        fullText.split('\n').forEach(line => {
-          const lineElem = document.createElement("code");
-          lineElem.textContent = line;
-          bubble.appendChild(lineElem);
-        });
+        bubble.textContent = fullText;
         chatContainer.scrollTop = chatContainer.scrollHeight;
       }
 
@@ -262,6 +255,11 @@
         sendMessage();
       }
     });
+
+    // Apply saved layout
+    if (localStorage.getItem("layoutMode") === "mobile") {
+      document.body.classList.add("mobile");
+    }
 
     renderChat();
   </script>

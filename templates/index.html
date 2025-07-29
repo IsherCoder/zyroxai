@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Bolt AI </title>
+  <title>Bolt AI</title>
   <style>
     body {
       margin: 0;
@@ -29,9 +29,10 @@
       background: #e5e7eb;
     }
 
-    select {
+    select, #toggleLayout {
       font-size: 1rem;
       padding: 0.5rem;
+      margin-right: 0.5rem;
     }
 
     #chatContainer {
@@ -61,6 +62,7 @@
     .bot {
       align-self: flex-start;
       background-color: #e0e0e0;
+      white-space: pre-wrap;
     }
 
     #inputArea {
@@ -94,16 +96,59 @@
     #clearBtn {
       background: #dc2626;
     }
+
+    /* MOBILE LAYOUT OVERRIDE */
+    body.mobile #topBar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    body.mobile select,
+    body.mobile #toggleLayout {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+
+    body.mobile #chatContainer {
+      padding: 0.5rem;
+    }
+
+    body.mobile .message {
+      max-width: 95%;
+      font-size: 0.95rem;
+    }
+
+    body.mobile #inputArea {
+      flex-direction: column;
+    }
+
+    body.mobile button {
+      width: 100%;
+    }
+
+    code {
+      background: #2d2d2d;
+      color: #f1f1f1;
+      display: block;
+      padding: 0.4rem 0.6rem;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.95rem;
+      margin-bottom: 0.3rem;
+    }
   </style>
 </head>
 <body>
   <h1>🤖 Bolt AI by IsherCoder</h1>
   <div id="topBar">
-    <select id="modelSelect" onchange="setModel()">
-      <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
-      <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
-      <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
-    </select>
+    <div>
+      <select id="modelSelect" onchange="setModel()">
+        <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
+        <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
+        <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
+      </select>
+      <button id="toggleLayout" onclick="toggleLayout()">Switch Layout</button>
+    </div>
     <button id="clearBtn" onclick="clearChat()">Clear</button>
   </div>
 
@@ -123,6 +168,17 @@
     let selectedModel = localStorage.getItem("selectedModel") || "Bolt O4 Nexus";
     modelSelect.value = selectedModel;
 
+    let currentLayout = localStorage.getItem("layoutMode") || "desktop";
+    if (currentLayout === "mobile") {
+      document.body.classList.add("mobile");
+    }
+
+    function toggleLayout() {
+      document.body.classList.toggle("mobile");
+      currentLayout = document.body.classList.contains("mobile") ? "mobile" : "desktop";
+      localStorage.setItem("layoutMode", currentLayout);
+    }
+
     function setModel() {
       selectedModel = modelSelect.value;
       localStorage.setItem("selectedModel", selectedModel);
@@ -133,7 +189,15 @@
       chatHistory.forEach(msg => {
         const bubble = document.createElement("div");
         bubble.className = "message " + (msg.role === "user" ? "user" : "bot");
-        bubble.textContent = msg.content;
+        if (msg.role === "assistant" && msg.content.includes("\n")) {
+          msg.content.split("\n").forEach(line => {
+            const lineElem = document.createElement("code");
+            lineElem.textContent = line;
+            bubble.appendChild(lineElem);
+          });
+        } else {
+          bubble.textContent = msg.content;
+        }
         chatContainer.appendChild(bubble);
       });
       chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -171,7 +235,14 @@
         if (done) break;
         const chunk = decoder.decode(value);
         fullText += chunk;
-        bubble.textContent = fullText;
+
+        // Live update as line-by-line <code> blocks
+        bubble.innerHTML = '';
+        fullText.split('\n').forEach(line => {
+          const lineElem = document.createElement("code");
+          lineElem.textContent = line;
+          bubble.appendChild(lineElem);
+        });
         chatContainer.scrollTop = chatContainer.scrollHeight;
       }
 

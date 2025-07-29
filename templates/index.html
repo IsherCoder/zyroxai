@@ -111,7 +111,7 @@
       color: #fff;
     }
 
-    /* === Manual Mobile Layout Toggle === */
+    /* Mobile Layout Overrides */
     body.mobile #topBar {
       flex-direction: column;
       align-items: stretch;
@@ -140,7 +140,7 @@
       max-width: 95%;
     }
 
-    /* Also keep responsive adjustments */
+    /* Responsive Fallback */
     @media (max-width: 600px) {
       #topBar {
         flex-direction: column;
@@ -300,10 +300,13 @@
       }
     });
 
-    // Apply saved layout and toggle button text on load
-    if (localStorage.getItem("layoutMode") === "mobile") {
+    // Apply layout and button text on load
+    const savedLayout = localStorage.getItem("layoutMode");
+    if (savedLayout === "mobile") {
       document.body.classList.add("mobile");
       toggleLayoutBtn.textContent = "Switch to Desktop";
+    } else {
+      toggleLayoutBtn.textContent = "Switch to Mobile";
     }
 
     renderChat();

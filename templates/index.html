@@ -258,13 +258,6 @@
           body: JSON.stringify({ history: chatHistory, selected_model: selectedModel })
         });
 
-        if (!res.ok) {
-          bubble.textContent = "Error: " + res.status + " " + res.statusText;
-          botMsg.content = bubble.textContent;
-          localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-          return;
-        }
-
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let fullText = "";

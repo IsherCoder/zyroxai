@@ -46,10 +46,9 @@ def chat():
             )
             for chunk in response:
                 if chunk.choices and chunk.choices[0].delta.content:
-                    token = chunk.choices[0].delta.content
-                    yield clean_token(token)
+                    yield clean_token(chunk.choices[0].delta.content)
         except Exception as e:
-            yield "\n⚠️ Error streaming response.\n"
+            yield f"\n⚠️ Error: {str(e)}\n"
 
     return Response(stream(), mimetype='text/plain')
 

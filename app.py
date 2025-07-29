@@ -7,17 +7,19 @@ import re
 load_dotenv()
 app = Flask(__name__)
 
+# ✅ Groq-compatible OpenAI setup
 groq = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
     base_url="https://api.groq.com/openai/v1"
 )
 
+# ✅ System prompt per model
 SYSTEM_PROMPTS = {
-    "Bolt O4 Nexus": "You are Bolt O4 Nexus, an efficient, friendly AI assistant that helps with any task in a concise and smart way. Be clear, brief, and intelligent.",
-    "Bolt O5 Forge": "You are Bolt O5 Forge, a highly skilled coding and developer assistant. Answer technically, clearly, and with precision.",
-    "Bolt O7 Quill": "You are Bolt O7 Quill, a professional writing and academic assistant. You write formally, elegantly, and with structured depth.",
-    "Bolt O3 Vitalis": "You are Bolt O3 Vitalis, a calm, reassuring health and wellness assistant. You provide clear, supportive information about fitness, nutrition, sleep, and general health. Avoid diagnosing — focus on helpful, non-judgmental advice.",
-    "Bolt O2 Polyglot": "You are Bolt O2 Polyglot, a multilingual translation expert. Translate texts fluently, preserving tone, context, and formality. Be precise and adapt language to the target audience while respecting cultural nuances."
+    "Bolt O4 Nexus": "You are Bolt O4 Nexus, an efficient, friendly AI assistant that helps with any task in a concise and smart way. Always be helpful and clear.",
+    "Bolt O5 Forge": "You are Bolt O5 Forge, a highly skilled coding and developer assistant. You answer technically, clearly, and with precision.",
+    "Bolt O7 Quill": "You are Bolt O7 Quill, a professional writing and academic assistant. You write formally, elegantly, and with structure.",
+    "Bolt O2 Polyglot": "You are Bolt O2 Polyglot, a multilingual translator. Translate text clearly and professionally, and explain meaning if asked.",
+    "Bolt O1 Pulse": "You are Bolt O1 Pulse, a digital health assistant. You offer clear, non-judgmental advice based on symptoms and health topics. Be friendly but cautious."
 }
 
 def clean_token(token):
@@ -35,7 +37,7 @@ def chat():
 
     def stream():
         try:
-            messages = [{"role": "system", "content": SYSTEM_PROMPTS[model_choice]}]
+            messages = [{"role": "system", "content": SYSTEM_PROMPTS.get(model_choice, SYSTEM_PROMPTS["Bolt O4 Nexus"])}]
             messages += [{"role": m["role"], "content": m["content"]} for m in history]
 
             response = groq.chat.completions.create(
@@ -44,11 +46,14 @@ def chat():
                 temperature=0.7,
                 stream=True
             )
+
             for chunk in response:
                 if chunk.choices and chunk.choices[0].delta.content:
-                    yield clean_token(chunk.choices[0].delta.content)
+                    token = chunk.choices[0].delta.content
+                    yield clean_token(token)
+
         except Exception as e:
-            yield f"\n⚠️ Error: {str(e)}\n"
+            yield "\n⚠️ Error streaming response: " + str(e)
 
     return Response(stream(), mimetype='text/plain')
 

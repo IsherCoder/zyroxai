@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, Response
+from flask import Flask, render_template, request, Response
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
@@ -7,13 +7,12 @@ import re
 load_dotenv()
 app = Flask(__name__)
 
-# ✅ Groq-compatible OpenAI setup
+# Groq-compatible OpenAI setup
 groq = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
     base_url="https://api.groq.com/openai/v1"
 )
 
-# ✅ System prompt per model
 SYSTEM_PROMPTS = {
     "Bolt O4 Nexus": "You are Bolt O4 Nexus, an efficient, friendly AI assistant that helps with any task in a concise and smart way. Always be helpful and clear.",
     "Bolt O5 Forge": "You are Bolt O5 Forge, a highly skilled coding and developer assistant. You answer technically, clearly, and with precision.",
@@ -22,13 +21,16 @@ SYSTEM_PROMPTS = {
     "Bolt O8 Polyglot": "You are Bolt O8 Polyglot, a culturally sensitive translation expert. Translate accurately between major world languages and explain nuances clearly. Maintain elegance and precision in tone."
 }
 
-
 def clean_token(token):
     return re.sub(r"[*_`•▶️➡️➤]+", "", token)
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/login')
+def login():
+    return render_template('login.html')
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -50,8 +52,7 @@ def chat():
 
             for chunk in response:
                 if chunk.choices and chunk.choices[0].delta.content:
-                    token = chunk.choices[0].delta.content
-                    yield clean_token(token)
+                    yield clean_token(chunk.choices[0].delta.content)
 
         except Exception as e:
             yield "\n⚠️ Error streaming response: " + str(e)

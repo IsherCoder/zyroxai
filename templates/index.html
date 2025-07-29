@@ -12,122 +12,93 @@
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background-color: #f9fafb;
+      background: #f4f6f8;
       display: flex;
       height: 100vh;
       overflow: hidden;
-      color: #111827;
     }
 
     #sidebar {
       width: 280px;
-      background-color: #111827;
-      color: white;
+      background: #111827;
+      color: #fff;
+      padding: 1rem;
       display: flex;
       flex-direction: column;
-      padding: 1rem;
-      border-right: 1px solid #1f2937;
-    }
-
-    #sidebar h1 {
-      font-size: 1.3rem;
-      font-weight: 600;
-      margin: 0 0 1rem 0;
-    }
-
-    #chatList {
-      flex: 1;
+      gap: 1rem;
       overflow-y: auto;
-      padding-top: 1rem;
     }
 
-    .chatItem {
+    #sidebar h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      text-align: center;
+    }
+
+    #chatList button {
+      background: #1f2937;
+      border: none;
+      color: white;
+      padding: 0.5rem;
+      text-align: left;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 0.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background-color: #1f2937;
-      padding: 0.6rem 0.8rem;
-      margin-bottom: 0.5rem;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .chatItem:hover {
-      background-color: #374151;
     }
 
     .deleteBtn {
-      background: none;
+      background: transparent;
       border: none;
-      color: #f87171;
+      color: red;
       font-size: 1rem;
       cursor: pointer;
-      margin-left: 0.5rem;
+      margin-left: 10px;
     }
 
     #main {
       flex: 1;
       display: flex;
       flex-direction: column;
-      background-color: #ffffff;
+      height: 100vh;
     }
 
     #topBar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1rem;
-      border-bottom: 1px solid #e5e7eb;
-      background-color: #f3f4f6;
+      padding: 0.75rem 1rem;
+      background: #e5e7eb;
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
 
-    select {
+    select, button {
+      padding: 0.5rem 1rem;
       font-size: 1rem;
-      padding: 0.4rem 0.6rem;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-
-    button {
-      padding: 0.6rem 1rem;
-      background-color: #2563eb;
-      color: white;
+      border-radius: 6px;
       border: none;
-      border-radius: 8px;
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    button:hover {
-      background-color: #1d4ed8;
-    }
-
-    #clearBtn {
-      background-color: #ef4444;
-    }
-
-    #clearBtn:hover {
-      background-color: #dc2626;
     }
 
     #chatContainer {
       flex: 1;
+      padding: 1rem;
       overflow-y: auto;
-      padding: 2rem;
-      background-color: #f9fafb;
+      display: flex;
+      flex-direction: column;
     }
 
     .message {
       max-width: 80%;
-      padding: 1rem 1.2rem;
-      margin-bottom: 1rem;
-      border-radius: 12px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      padding: 0.8rem 1rem;
+      border-radius: 1rem;
+      margin: 0.5rem 0;
       font-size: 1rem;
-      line-height: 1.5;
+      line-height: 1.4;
+      word-wrap: break-word;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
     .user {
@@ -137,113 +108,129 @@
 
     .bot {
       align-self: flex-start;
-      background-color: #e5e7eb;
+      background-color: #e0e0e0;
     }
 
     #inputArea {
       display: flex;
       padding: 1rem;
-      border-top: 1px solid #e5e7eb;
-      background-color: #ffffff;
+      gap: 0.5rem;
+      background: #ffffff;
+      border-top: 1px solid #ccc;
     }
 
     textarea {
       flex: 1;
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+      border-radius: 10px;
       resize: none;
-      padding: 0.8rem;
-      border-radius: 8px;
       font-size: 1rem;
-      border: 1px solid #d1d5db;
       height: 2.8rem;
     }
 
-    #welcomeBanner {
-      text-align: center;
-      color: #6b7280;
-      font-size: 1.3rem;
-      margin-top: 3rem;
+    #clearBtn {
+      background: #dc2626;
+      color: white;
     }
 
-    #newChatBtn {
-      margin-bottom: 1rem;
-      background-color: #10b981;
+    /* Mobile layout toggle */
+    body.mobile-layout {
+      flex-direction: column;
     }
 
-    #newChatBtn:hover {
-      background-color: #059669;
+    body.mobile-layout #sidebar {
+      display: none;
+    }
+
+    body.mobile-layout #main {
+      width: 100%;
+    }
+
+    body.mobile-layout #topBar {
+      justify-content: center;
+    }
+
+    body.mobile-layout #chatContainer {
+      height: calc(100vh - 170px);
+    }
+
+    /* Sidebar overlay in mobile toggle */
+    body.mobile-layout.show-sidebar #sidebar {
+      display: block;
+      position: absolute;
+      z-index: 999;
+      width: 85%;
+      height: 100vh;
+      background-color: #111827;
+      top: 0;
+      left: 0;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+    }
+
+    /* Responsive tweaks */
+    @media screen and (max-width: 600px) {
+      #topBar {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
 <body>
-
   <div id="sidebar">
-    <h1>🧠 Bolt by IsherCoder</h1>
-    <button id="newChatBtn" onclick="startNewChat()">+ New Chat</button>
+    <h2>🧠 Your Chats</h2>
     <div id="chatList"></div>
   </div>
 
   <div id="main">
     <div id="topBar">
       <select id="modelSelect" onchange="setModel()">
-        <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
-        <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
-        <option value="Bolt O6 Vita">Bolt O6 Vita – Health & Wellness Specialist</option>
-        <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
-        <option value="Bolt O8 Polyglot">Bolt O8 Polyglot – Elite Translation Companion</option>
+        <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday</option>
+        <option value="Bolt O5 Forge">Bolt O5 Forge – Coding</option>
+        <option value="Bolt O6 Vita">Bolt O6 Vita – Health</option>
+        <option value="Bolt O7 Quill">Bolt O7 Quill – Writing</option>
+        <option value="Bolt O8 Polyglot">Bolt O8 Polyglot – Translation</option>
       </select>
+      <button onclick="toggleLayout()">Switch Layout</button>
+      <button id="sidebarToggle" onclick="toggleSidebar()">☰ Chats</button>
       <button id="clearBtn" onclick="clearChat()">Clear</button>
     </div>
 
-    <div id="chatContainer">
-      <div id="welcomeBanner">
-        👋 Hello, I’m Bolt. How can I help you today?<br><br>
-        Click “+ New Chat” to begin.
-      </div>
-    </div>
+    <div id="chatContainer"></div>
 
     <div id="inputArea">
-      <textarea id="userInput" placeholder="Type your question here..."></textarea>
+      <textarea id="userInput" placeholder="Ask something..."></textarea>
       <button onclick="sendMessage()">Send</button>
     </div>
   </div>
 
   <script>
-    const chatContainer = document.getElementById('chatContainer');
-    const modelSelect = document.getElementById('modelSelect');
-    const input = document.getElementById('userInput');
-    const chatList = document.getElementById('chatList');
+    const chatContainer = document.getElementById("chatContainer");
+    const input = document.getElementById("userInput");
+    const modelSelect = document.getElementById("modelSelect");
+    const chatList = document.getElementById("chatList");
 
+    let currentChatId = null;
     let chatHistory = [];
     let selectedModel = localStorage.getItem("selectedModel") || "Bolt O4 Nexus";
-    let currentChatId = null;
     modelSelect.value = selectedModel;
+
+    function generateId() {
+      return "chat-" + Date.now();
+    }
 
     function setModel() {
       selectedModel = modelSelect.value;
       localStorage.setItem("selectedModel", selectedModel);
     }
 
-    function saveChat() {
-      const allChats = JSON.parse(localStorage.getItem("boltChats") || "{}");
-      allChats[currentChatId] = chatHistory;
-      localStorage.setItem("boltChats", JSON.stringify(allChats));
-      loadChatList();
-    }
-
     function loadChatList() {
-      chatList.innerHTML = "";
       const allChats = JSON.parse(localStorage.getItem("boltChats") || "{}");
-      Object.keys(allChats).forEach(id => {
-        const firstMsg = allChats[id].find(m => m.role === "user");
-        const title = firstMsg ? firstMsg.content.slice(0, 30) + "..." : "Untitled Chat";
-
-        const div = document.createElement("div");
-        div.className = "chatItem";
-
-        const titleSpan = document.createElement("span");
-        titleSpan.textContent = title;
-        titleSpan.style.flex = "1";
-        titleSpan.onclick = () => loadChat(id);
+      chatList.innerHTML = "";
+      Object.entries(allChats).forEach(([id, messages]) => {
+        const btn = document.createElement("button");
+        btn.textContent = messages[0]?.content?.slice(0, 20) || "Chat";
+        btn.onclick = () => loadChat(id);
 
         const delBtn = document.createElement("button");
         delBtn.className = "deleteBtn";
@@ -253,46 +240,38 @@
           deleteChat(id);
         };
 
-        div.appendChild(titleSpan);
-        div.appendChild(delBtn);
-        chatList.appendChild(div);
+        btn.appendChild(delBtn);
+        chatList.appendChild(btn);
       });
+    }
+
+    function loadChat(id) {
+      const allChats = JSON.parse(localStorage.getItem("boltChats") || "{}");
+      chatHistory = allChats[id] || [];
+      currentChatId = id;
+      renderChat();
+    }
+
+    function saveChat() {
+      const allChats = JSON.parse(localStorage.getItem("boltChats") || "{}");
+      allChats[currentChatId] = chatHistory;
+      localStorage.setItem("boltChats", JSON.stringify(allChats));
     }
 
     function deleteChat(id) {
       const allChats = JSON.parse(localStorage.getItem("boltChats") || "{}");
       delete allChats[id];
       localStorage.setItem("boltChats", JSON.stringify(allChats));
-
       if (currentChatId === id) {
         chatHistory = [];
         currentChatId = null;
         renderChat();
       }
-
       loadChatList();
-    }
-
-    function loadChat(id) {
-      currentChatId = id;
-      chatHistory = JSON.parse(localStorage.getItem("boltChats"))[id];
-      renderChat();
-    }
-
-    function startNewChat() {
-      chatHistory = [];
-      currentChatId = Date.now().toString();
-      renderChat();
     }
 
     function renderChat() {
       chatContainer.innerHTML = "";
-      if (!chatHistory.length) {
-        chatContainer.innerHTML = `<div id="welcomeBanner">
-          👋 Hello, I’m Bolt. How can I help you today?<br><br>
-          Type a question or select a model.
-        </div>`;
-      }
       chatHistory.forEach(msg => {
         const bubble = document.createElement("div");
         bubble.className = "message " + (msg.role === "user" ? "user" : "bot");
@@ -306,6 +285,11 @@
       const text = input.value.trim();
       if (!text) return;
 
+      if (!currentChatId) {
+        currentChatId = generateId();
+        chatHistory = [];
+      }
+
       const userMsg = { role: "user", content: text };
       chatHistory.push(userMsg);
       input.value = "";
@@ -313,10 +297,10 @@
 
       const botMsg = { role: "assistant", content: "" };
       chatHistory.push(botMsg);
-      const bubble = document.createElement("div");
-      bubble.className = "message bot";
-      chatContainer.appendChild(bubble);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      renderChat();
+      saveChat();
+      loadChatList();
 
       const res = await fetch("/chat", {
         method: "POST",
@@ -327,6 +311,7 @@
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let fullText = "";
+      const bubble = document.querySelectorAll(".message.bot:last-child")[0];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -343,15 +328,38 @@
 
     function clearChat() {
       chatHistory = [];
-      if (currentChatId) {
-        const allChats = JSON.parse(localStorage.getItem("boltChats") || "{}");
-        delete allChats[currentChatId];
-        localStorage.setItem("boltChats", JSON.stringify(allChats));
-        currentChatId = null;
-      }
+      currentChatId = null;
       renderChat();
-      loadChatList();
     }
+
+    function toggleLayout() {
+      const isMobile = document.body.classList.toggle("mobile-layout");
+      localStorage.setItem("boltLayout", isMobile ? "mobile" : "desktop");
+    }
+
+    function toggleSidebar() {
+      document.body.classList.toggle("show-sidebar");
+    }
+
+    document.addEventListener("click", function (e) {
+      if (
+        document.body.classList.contains("mobile-layout") &&
+        document.body.classList.contains("show-sidebar") &&
+        !document.getElementById("sidebar").contains(e.target) &&
+        !e.target.closest("#sidebarToggle")
+      ) {
+        document.body.classList.remove("show-sidebar");
+      }
+    });
+
+    // On load
+    window.addEventListener("DOMContentLoaded", () => {
+      const saved = localStorage.getItem("boltLayout");
+      if (saved === "mobile") {
+        document.body.classList.add("mobile-layout");
+      }
+      loadChatList();
+    });
 
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
@@ -359,9 +367,6 @@
         sendMessage();
       }
     });
-
-    loadChatList();
-    renderChat();
   </script>
 </body>
 </html>

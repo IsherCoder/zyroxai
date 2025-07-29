@@ -40,11 +40,10 @@
       flex: 1;
     }
 
-    select, #toggleLayout, #clearBtn {
+    select, button {
       font-size: 0.9rem;
       padding: 0.4rem 0.6rem;
-      flex: 1;
-      min-width: 100px;
+      min-width: 120px;
       cursor: pointer;
     }
 
@@ -83,11 +82,11 @@
       gap: 0.5rem;
       background: #ffffff;
       border-top: 1px solid #ccc;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
     }
 
     textarea {
-      flex: 1 1 100%;
+      flex: 1;
       padding: 0.6rem;
       border: 1px solid #ccc;
       border-radius: 8px;
@@ -97,20 +96,17 @@
     }
 
     button {
-      padding: 0.6rem 1rem;
       background: #2563eb;
       color: white;
       border: none;
       border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
     }
 
     #clearBtn {
       background: #dc2626;
-      color: #fff;
     }
 
+    /* Mobile layout */
     body.mobile #topBar {
       flex-direction: column;
       align-items: stretch;
@@ -118,12 +114,10 @@
 
     body.mobile #topBar > div {
       flex-direction: column;
-      align-items: stretch;
     }
 
     body.mobile select,
-    body.mobile #toggleLayout,
-    body.mobile #clearBtn {
+    body.mobile button {
       width: 100%;
     }
 
@@ -131,12 +125,40 @@
       flex-direction: column;
     }
 
-    body.mobile button {
-      width: 100%;
-    }
-
     body.mobile .message {
       max-width: 95%;
+    }
+
+    @media (max-width: 600px) {
+      #topBar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.5rem;
+      }
+
+      #topBar > div {
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+
+      select, button {
+        width: 100%;
+      }
+
+      .message {
+        max-width: 95%;
+        font-size: 0.95rem;
+        padding: 0.6rem 0.8rem;
+      }
+
+      #inputArea {
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+
+      button {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -149,10 +171,11 @@
         <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
         <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
         <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
-        <option value="Bolt O3 Vitalis">Bolt O3 Vitalis – Health & Wellness Guide</option>
-        <option value="Bolt O2 Polyglot">Bolt O2 Polyglot – Multilingual Translator</option>
+        <option value="Bolt O2 Polyglot">Bolt O2 Polyglot – Translator</option>
+        <option value="Bolt O1 Pulse">Bolt O1 Pulse – Health Advisor</option>
       </select>
       <button id="toggleLayout" onclick="toggleLayout()">Switch to Mobile</button>
+      <button id="toggleVoice" onclick="toggleVoiceMode()">Speak with Bolt</button>
     </div>
     <button id="clearBtn" onclick="clearChat()">Clear</button>
   </div>
@@ -162,17 +185,21 @@
   <div id="inputArea">
     <textarea id="userInput" placeholder="Ask something..."></textarea>
     <button onclick="sendMessage()">Send</button>
-    <button onclick="startVoiceInput()">🎤 Speak</button>
+    <button onclick="startVoiceInput()">🎤</button>
   </div>
 
   <script>
+    let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+    let selectedModel = localStorage.getItem("selectedModel") || "Bolt O4 Nexus";
+    let isVoiceInput = false;
+    let voiceModeEnabled = false;
+
     const chatContainer = document.getElementById('chatContainer');
     const modelSelect = document.getElementById('modelSelect');
     const input = document.getElementById('userInput');
     const toggleLayoutBtn = document.getElementById('toggleLayout');
+    const toggleVoiceBtn = document.getElementById('toggleVoice');
 
-    let chatHistory = JSON.parse(localStorage.getItem("chatHistory") || "[]");
-    let selectedModel = localStorage.getItem("selectedModel") || "Bolt O4 Nexus";
     modelSelect.value = selectedModel;
 
     function toggleLayout() {
@@ -184,6 +211,11 @@
     function setModel() {
       selectedModel = modelSelect.value;
       localStorage.setItem("selectedModel", selectedModel);
+    }
+
+    function toggleVoiceMode() {
+      voiceModeEnabled = !voiceModeEnabled;
+      toggleVoiceBtn.textContent = voiceModeEnabled ? "Stop Speaking with Bolt" : "Speak with Bolt";
     }
 
     function renderChat() {
@@ -236,12 +268,45 @@
 
         botMsg.content = fullText;
         localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-        speakText(fullText); // 🔊
+
+        if (voiceModeEnabled) {
+          speakText(fullText);
+        }
+
+        isVoiceInput = false;
+
       } catch (error) {
         bubble.textContent = "Network error: " + error.message;
         botMsg.content = bubble.textContent;
         localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
       }
+    }
+
+    function startVoiceInput() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = function(event) {
+        const voiceText = event.results[0][0].transcript;
+        isVoiceInput = true;
+        sendMessage(voiceText);
+      };
+
+      recognition.onerror = function(event) {
+        alert('Voice error: ' + event.error);
+      };
+
+      recognition.start();
+    }
+
+    function speakText(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      speechSynthesis.speak(utterance);
     }
 
     function clearChat() {
@@ -266,38 +331,6 @@
     }
 
     renderChat();
-
-    function startVoiceInput() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert("Your browser does not support voice input.");
-        return;
-      }
-
-      const recognition = new SpeechRecognition();
-      recognition.lang = "en-US";
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
-
-      recognition.onresult = (event) => {
-        const voiceText = event.results[0][0].transcript;
-        sendMessage(voiceText);
-      };
-
-      recognition.onerror = (event) => {
-        alert("Voice error: " + event.error);
-      };
-
-      recognition.start();
-    }
-
-    function speakText(text) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "en-US";
-      utterance.rate = 1;
-      utterance.pitch = 1;
-      speechSynthesis.speak(utterance);
-    }
   </script>
 </body>
 </html>

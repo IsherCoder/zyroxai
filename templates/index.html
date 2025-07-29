@@ -83,11 +83,11 @@
       gap: 0.5rem;
       background: #ffffff;
       border-top: 1px solid #ccc;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
     }
 
     textarea {
-      flex: 1;
+      flex: 1 1 100%;
       padding: 0.6rem;
       border: 1px solid #ccc;
       border-radius: 8px;
@@ -138,44 +138,6 @@
     body.mobile .message {
       max-width: 95%;
     }
-
-    @media (max-width: 600px) {
-      #topBar {
-        flex-direction: column;
-        align-items: stretch;
-        padding: 0.5rem 0.5rem 0.25rem;
-      }
-
-      #topBar > div {
-        flex-direction: column;
-        gap: 0.3rem;
-      }
-
-      select, #toggleLayout, #clearBtn {
-        width: 100%;
-        margin: 0;
-      }
-
-      #chatContainer {
-        padding: 0.3rem;
-      }
-
-      .message {
-        max-width: 95%;
-        font-size: 0.95rem;
-        padding: 0.6rem 0.8rem;
-      }
-
-      #inputArea {
-        flex-direction: column;
-        gap: 0.3rem;
-        padding: 0.5rem;
-      }
-
-      button {
-        width: 100%;
-      }
-    }
   </style>
 </head>
 <body>
@@ -200,6 +162,7 @@
   <div id="inputArea">
     <textarea id="userInput" placeholder="Ask something..."></textarea>
     <button onclick="sendMessage()">Send</button>
+    <button onclick="startVoiceInput()">🎤 Speak</button>
   </div>
 
   <script>
@@ -234,11 +197,11 @@
       chatContainer.scrollTop = chatContainer.scrollHeight;
     }
 
-    async function sendMessage() {
-      const text = input.value.trim();
-      if (!text) return;
+    async function sendMessage(text = null) {
+      const message = text || input.value.trim();
+      if (!message) return;
 
-      const userMsg = { role: "user", content: text };
+      const userMsg = { role: "user", content: message };
       chatHistory.push(userMsg);
       localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
       input.value = "";
@@ -273,6 +236,7 @@
 
         botMsg.content = fullText;
         localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
+        speakText(fullText); // 🔊
       } catch (error) {
         bubble.textContent = "Network error: " + error.message;
         botMsg.content = bubble.textContent;
@@ -302,6 +266,38 @@
     }
 
     renderChat();
+
+    function startVoiceInput() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert("Your browser does not support voice input.");
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (event) => {
+        const voiceText = event.results[0][0].transcript;
+        sendMessage(voiceText);
+      };
+
+      recognition.onerror = (event) => {
+        alert("Voice error: " + event.error);
+      };
+
+      recognition.start();
+    }
+
+    function speakText(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      speechSynthesis.speak(utterance);
+    }
   </script>
 </body>
 </html>

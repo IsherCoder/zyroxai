@@ -335,7 +335,8 @@
         if (done) break;
         const chunk = decoder.decode(value);
         fullText += chunk;
-        bubble.textContent = fullText;
+        bubble.innerHTML = fullText
+        .split('\n\n').map(p => `<p>${p.trim().replace(/\n/g, '<br>')}</p>`).join('');
         chatContainer.scrollTop = chatContainer.scrollHeight;
       }
 

@@ -1,5 +1,8 @@
-Flask
+Pillow
+numpy
 openai
 python-dotenv
-requests
+flask
 gunicorn
+requests
+easyocr

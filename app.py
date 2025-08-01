@@ -1,17 +1,11 @@
-# app.py (Full code with EasyOCR + Groq integration)
-from flask import Flask, render_template, request, Response, jsonify
+from flask import Flask, render_template, request, Response
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
 import re
-import easyocr
-from PIL import Image
-import numpy as np
-import io
 
 load_dotenv()
 app = Flask(__name__)
-reader = easyocr.Reader(['ar', 'en'])  # Arabic + English support
 
 # Groq-compatible OpenAI setup
 groq = OpenAI(
@@ -28,7 +22,7 @@ SYSTEM_PROMPTS = {
 }
 
 def clean_token(token):
-    return re.sub(r"[*_`\u2022\u25B6\u2794\u27A4]+", "", token)
+    return re.sub(r"[*_`•▶️➡️➤]+", "", token)
 
 @app.route('/')
 def index():
@@ -64,34 +58,6 @@ def chat():
             yield "\n⚠️ Error streaming response: " + str(e)
 
     return Response(stream(), mimetype='text/plain')
-
-@app.route('/ocr', methods=['POST'])
-def ocr_image():
-    if 'image' not in request.files:
-        return jsonify({"error": "No image uploaded."}), 400
-
-    file = request.files['image']
-    image = Image.open(file.stream).convert("RGB")
-    image_np = np.array(image)  # ✅ Convert to NumPy array for EasyOCR
-    result = reader.readtext(image_np)
-    extracted_text = " ".join([entry[1] for entry in result])
-
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPTS['Bolt O8 Polyglot']},
-        {"role": "user", "content": f"Translate this Arabic text to English:\n{extracted_text}"}
-    ]
-
-    try:
-        response = groq.chat.completions.create(
-            model="llama3-70b-8192",
-            messages=messages,
-            temperature=0.7
-        )
-        translated = response.choices[0].message.content.strip()
-        return jsonify({"extracted_text": extracted_text, "translated_text": translated})
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

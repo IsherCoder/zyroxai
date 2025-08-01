@@ -1,7 +1,5 @@
 flask
 gunicorn
-easyocr
-numpy
 Pillow
 openai
 python-dotenv

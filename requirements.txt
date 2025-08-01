@@ -1,8 +1,7 @@
-Pillow
-numpy
-openai
-python-dotenv
 flask
 gunicorn
-requests
 easyocr
+numpy
+Pillow
+openai
+python-dotenv

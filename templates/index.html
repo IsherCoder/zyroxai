@@ -183,9 +183,9 @@
   </div>
 
   <div id="main">
-<div id="topBar">
+<div id="topBar" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid #e5e7eb; background-color: #f3f4f6; flex-wrap: wrap;">
   <div style="display: flex; gap: 0.5rem;">
-    <select id="modelSelect" onchange="setModel()">
+    <select id="modelSelect" onchange="setModel()" style="font-size: 1rem; padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid #ccc;">
       <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
       <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
       <option value="Bolt O6 Vita">Bolt O6 Vita – Health & Wellness Specialist</option>
@@ -193,7 +193,13 @@
       <option value="Bolt O8 Polyglot">Bolt O8 Polyglot – Elite Translation Companion</option>
     </select>
   </div>
+  <div style="display: flex; gap: 1rem; font-size: 0.9rem;">
+    <a href="https://github.com/IsherCoder/bolt/raw/main/terms%20and%20conditions.pdf" target="_blank" style="text-decoration: none; color: #4b5563;">📄 Terms</a>
+    <a href="https://forms.office.com/r/33SKdMEZ03" target="_blank" style="text-decoration: none; color: #4b5563;">💡 Suggest a Feature</a>
+    <a href="https://inpaint.model.tngtech.com/" target="_blank" style="text-decoration: none; color: #4b5563;">📷 Image generator</a>
+  </div>
 </div>
+
 
 
     <div id="chatContainer">
@@ -366,10 +372,6 @@
     renderChat();
   </script>
 
-  <footer style="text-align: center; padding: 1rem; font-size: 0.9rem; color: #666;">
-    <a href="https://github.com/IsherCoder/bolt/raw/main/terms%20and%20conditions.pdf" target="_blank">📄 Terms</a> |
-    <a href="https://forms.office.com/r/33SKdMEZ03" target="_blank">💡 Suggest a Feature</a>
-    <a href="https://inpaint.model.tngtech.com/" target="_blank">Image generator 📷</a>
-  </footer>
+</footer>
 </body>
 </html>

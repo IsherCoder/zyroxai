@@ -3,3 +3,4 @@ gunicorn
 Pillow
 openai
 python-dotenv
+

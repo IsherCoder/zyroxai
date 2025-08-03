@@ -5,9 +5,7 @@
   <title>Bolt by IsherCoder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -173,6 +171,42 @@
     #newChatBtn:hover {
       background-color: #059669;
     }
+
+    #fileDisplay {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      font-size: 0.75rem;
+      padding: 4px 12px;
+      border-top: 1px solid #e5e7eb;
+      background-color: #fdfdea;
+      color: #78350f;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .fileBadge {
+      background-color: #fef08a;
+      border: 1px solid #fde047;
+      padding: 2px 6px;
+      border-radius: 6px;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .fileBadge button {
+      all: unset;
+      color: #dc2626;
+      cursor: pointer;
+      font-weight: bold;
+      margin-left: 4px;
+    }
+
+    .fileBadge span {
+      font-size: 0.8rem;
+    }
   </style>
 </head>
 <body>
@@ -195,23 +229,16 @@
           <option value="Bolt O9 Ledger">Bolt O9 Ledger – Finance & Management Guru</option>
         </select>
       </div>
-      <div style="display: flex; gap: 1rem; font-size: 0.9rem;">
+      <div style="display: flex; gap: 1rem; font-size: 0.9rem; align-items: center;">
         <a href="https://github.com/IsherCoder/bolt/raw/main/terms%20and%20conditions.pdf" target="_blank" style="text-decoration: none; color: #4b5563;">📄 Terms</a>
         <a href="https://forms.office.com/r/33SKdMEZ03" target="_blank" style="text-decoration: none; color: #4b5563;">💡 Suggest a Feature</a>
         <a href="https://inpaint.model.tngtech.com/" target="_blank" style="text-decoration: none; color: #4b5563;">📷 Image generator</a>
+        <button onclick="uploadFile()" title="Upload PDF" style="all: unset; font-size: 0.9rem; cursor: pointer; color: #78350f; background-color: #fef3c7; border: 1px solid #fbbf24; border-radius: 5px; padding: 2px 6px;">📎 Upload</button>
       </div>
     </div>
-    <button onclick="uploadFile()" style="all: unset; cursor: pointer; font-size: 0.75rem; padding: 2px 6px; border: 1px solid #fbbf24; border-radius: 6px; background-color: #fef3c7; color: #78350f;">
-  📎 Upload a file and Bolt will use that information to tailor answers just for that
-</button>
 
-
-    <div id="chatContainer">
-      <div id="welcomeBanner">
-        👋 Hello, I’m Bolt. How can I help you today?<br><br>
-        Click “+ New Chat” to begin.
-      </div>
-    </div>
+    <div id="chatContainer"></div>
+    <div id="fileDisplay"></div>
 
     <div id="inputArea">
       <textarea id="userInput" placeholder="Type your question here..."></textarea>
@@ -286,6 +313,10 @@
       delete allChats[id];
       localStorage.setItem("boltChats", JSON.stringify(allChats));
 
+      const files = JSON.parse(localStorage.getItem("boltFiles") || "{}");
+      delete files[id];
+      localStorage.setItem("boltFiles", JSON.stringify(files));
+
       if (currentChatId === id) {
         chatHistory = [];
         currentChatId = null;
@@ -320,6 +351,29 @@
         chatContainer.appendChild(bubble);
       });
       chatContainer.scrollTop = chatContainer.scrollHeight;
+      renderFiles();
+    }
+
+    function renderFiles() {
+      const allFiles = JSON.parse(localStorage.getItem("boltFiles") || "{}");
+      const files = allFiles[currentChatId] || [];
+      const display = document.getElementById("fileDisplay");
+      display.innerHTML = "";
+
+      files.forEach((f, index) => {
+        const badge = document.createElement("div");
+        badge.className = "fileBadge";
+        badge.innerHTML = `📄 ${f} <span>✅</span> <button onclick="removeFile(${index})">✖</button>`;
+        display.appendChild(badge);
+      });
+    }
+
+    function removeFile(index) {
+      const allFiles = JSON.parse(localStorage.getItem("boltFiles") || "{}");
+      if (!allFiles[currentChatId]) return;
+      allFiles[currentChatId].splice(index, 1);
+      localStorage.setItem("boltFiles", JSON.stringify(allFiles));
+      renderFiles();
     }
 
     async function sendMessage() {
@@ -361,38 +415,46 @@
       saveChat();
     }
 
+    function uploadFile() {
+      const file = document.createElement('input');
+      file.type = 'file';
+      file.accept = '.pdf';
+      file.onchange = async () => {
+        const selected = file.files[0];
+        if (!selected) return;
+
+        const formData = new FormData();
+        formData.append("file", selected);
+
+        const res = await fetch("/upload", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+        if (data.extracted_text) {
+          alert("📄 PDF uploaded and processed!");
+
+          const allFiles = JSON.parse(localStorage.getItem("boltFiles") || "{}");
+          if (!allFiles[currentChatId]) allFiles[currentChatId] = [];
+          allFiles[currentChatId].push(selected.name);
+          localStorage.setItem("boltFiles", JSON.stringify(allFiles));
+
+          localStorage.setItem("boltCustomContext", data.extracted_text);
+          renderFiles();
+        } else {
+          alert("❌ Error: " + (data.error || "Unable to extract file."));
+        }
+      };
+      file.click();
+    }
+
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         sendMessage();
       }
     });
-function uploadFile() {
-  const file = document.createElement('input');
-  file.type = 'file';
-  file.accept = '.pdf,.doc,.docx';
-  file.onchange = async () => {
-    const selected = file.files[0];
-    if (!selected) return;
-
-    const formData = new FormData();
-    formData.append("file", selected);
-
-    const res = await fetch("/upload", {
-      method: "POST",
-      body: formData
-    });
-
-    const data = await res.json();
-    if (data.extracted_text) {
-      alert("📄 File uploaded and processed!");
-      localStorage.setItem("boltCustomContext", data.extracted_text);
-    } else {
-      alert("❌ Error: " + (data.error || "Unable to extract file."));
-    }
-  };
-  file.click();
-}
 
     loadChatList();
     renderChat();

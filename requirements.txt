@@ -3,4 +3,5 @@ gunicorn
 Pillow
 openai
 python-dotenv
-fitz
+PyMuPDF
+

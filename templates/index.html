@@ -201,6 +201,10 @@
         <a href="https://inpaint.model.tngtech.com/" target="_blank" style="text-decoration: none; color: #4b5563;">📷 Image generator</a>
       </div>
     </div>
+    <button onclick="uploadFile()" style="all: unset; cursor: pointer; font-size: 0.75rem; padding: 2px 6px; border: 1px solid #fbbf24; border-radius: 6px; background-color: #fef3c7; color: #78350f;">
+  📎 Upload a file and Bolt will use that information to tailor answers just for that
+</button>
+
 
     <div id="chatContainer">
       <div id="welcomeBanner">
@@ -363,6 +367,32 @@
         sendMessage();
       }
     });
+function uploadFile() {
+  const file = document.createElement('input');
+  file.type = 'file';
+  file.accept = '.pdf,.doc,.docx';
+  file.onchange = async () => {
+    const selected = file.files[0];
+    if (!selected) return;
+
+    const formData = new FormData();
+    formData.append("file", selected);
+
+    const res = await fetch("/upload", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+    if (data.extracted_text) {
+      alert("📄 File uploaded and processed!");
+      localStorage.setItem("boltCustomContext", data.extracted_text);
+    } else {
+      alert("❌ Error: " + (data.error || "Unable to extract file."));
+    }
+  };
+  file.click();
+}
 
     loadChatList();
     renderChat();

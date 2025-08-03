@@ -1,17 +1,23 @@
-from flask import Flask, render_template, request, Response
+from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, render_template
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
-import re
+import fitz  # PyMuPDF for PDFs
+import docx  # python-docx for Word
+from flask_cors import CORS
 
 load_dotenv()
 app = Flask(__name__)
+CORS(app)
 
-# Groq-compatible OpenAI setup
 groq = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
     base_url="https://api.groq.com/openai/v1"
 )
+
+# Store uploaded document text
+uploaded_context = ""
 
 SYSTEM_PROMPTS = {
     "Bolt O4 Nexus": "You are Bolt O4 Nexus, an efficient, friendly AI assistant that helps with any task in a concise and smart way. Always be helpful and clear.",
@@ -22,43 +28,57 @@ SYSTEM_PROMPTS = {
     "Bolt O9 Ledger": "You are Bolt O9 Ledger, a strategic expert in finance, business operations, and management consulting. Answer clearly, insightfully, and with practical examples from real-world finance."
 }
 
-def clean_token(token):
-    return re.sub(r"[*_`•▶️➡️➤]+", "", token)
-
-@app.route('/')
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/login')
-def login():
-    return render_template('login.html')
 
-@app.route('/chat', methods=['POST'])
+@app.route("/upload", methods=["POST"])
+def upload_file():
+    global uploaded_context
+    file = request.files["file"]
+    if not file:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    if file.filename.endswith(".pdf"):
+        doc = fitz.open(stream=file.read(), filetype="pdf")
+        text = "\n".join([page.get_text() for page in doc])
+    elif file.filename.endswith(".docx"):
+        d = docx.Document(file)
+        text = "\n".join([para.text for para in d.paragraphs])
+    else:
+        return jsonify({"error": "Unsupported file type"}), 400
+
+    uploaded_context = text[:10000]  # Limit to 10k characters
+    return jsonify({"extracted_text": uploaded_context})
+
+@app.route("/chat", methods=["POST"])
 def chat():
+    global uploaded_context
     data = request.get_json()
     history = data.get("history", [])
-    model_choice = data.get("selected_model", "Bolt O4 Nexus")
+    selected_model = data.get("selected_model", "Bolt O4 Nexus")
 
-    def stream():
-        try:
-            messages = [{"role": "system", "content": SYSTEM_PROMPTS.get(model_choice, SYSTEM_PROMPTS["Bolt O4 Nexus"])}]
-            messages += [{"role": m["role"], "content": m["content"]} for m in history]
+    system_prompt = SYSTEM_PROMPTS.get(selected_model, SYSTEM_PROMPTS["Bolt O4 Nexus"])
 
-            response = groq.chat.completions.create(
-                model="llama3-70b-8192",
-                messages=messages,
-                temperature=0.7,
-                stream=True
-            )
+    # Add document context
+    if uploaded_context:
+        system_prompt += f"\n\nYou also have access to the following information from a document:\n{uploaded_context}"
 
-            for chunk in response:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    yield clean_token(chunk.choices[0].delta.content)
+    messages = [{"role": "system", "content": system_prompt}] + history
 
-        except Exception as e:
-            yield "\n⚠️ Error streaming response: " + str(e)
+    completion = groq.chat.completions.create(
+        model="llama3-70b-8192",
+        messages=messages,
+        stream=True
+    )
 
-    return Response(stream(), mimetype='text/plain')
+    def generate():
+        for chunk in completion:
+            yield chunk.choices[0].delta.content or ""
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    return Response(generate(), mimetype="text/plain")
+
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)

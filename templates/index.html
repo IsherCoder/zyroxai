@@ -81,6 +81,7 @@
       padding: 1rem;
       border-bottom: 1px solid #e5e7eb;
       background-color: #f3f4f6;
+      flex-wrap: wrap;
     }
 
     select {
@@ -183,24 +184,23 @@
   </div>
 
   <div id="main">
-<div id="topBar" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid #e5e7eb; background-color: #f3f4f6; flex-wrap: wrap;">
-  <div style="display: flex; gap: 0.5rem;">
-    <select id="modelSelect" onchange="setModel()" style="font-size: 1rem; padding: 0.4rem 0.6rem; border-radius: 8px; border: 1px solid #ccc;">
-      <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
-      <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
-      <option value="Bolt O6 Vita">Bolt O6 Vita – Health & Wellness Specialist</option>
-      <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
-      <option value="Bolt O8 Polyglot">Bolt O8 Polyglot – Elite Translation Companion</option>
-    </select>
-  </div>
-  <div style="display: flex; gap: 1rem; font-size: 0.9rem;">
-    <a href="https://github.com/IsherCoder/bolt/raw/main/terms%20and%20conditions.pdf" target="_blank" style="text-decoration: none; color: #4b5563;">📄 Terms</a>
-    <a href="https://forms.office.com/r/33SKdMEZ03" target="_blank" style="text-decoration: none; color: #4b5563;">💡 Suggest a Feature</a>
-    <a href="https://inpaint.model.tngtech.com/" target="_blank" style="text-decoration: none; color: #4b5563;">📷 Image generator</a>
-  </div>
-</div>
-
-
+    <div id="topBar">
+      <div style="display: flex; gap: 0.5rem;">
+        <select id="modelSelect" onchange="setModel()">
+          <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
+          <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
+          <option value="Bolt O6 Vita">Bolt O6 Vita – Health & Wellness Specialist</option>
+          <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
+          <option value="Bolt O8 Polyglot">Bolt O8 Polyglot – Elite Translation Companion</option>
+          <option value="Bolt O9 Ledger">Bolt O9 Ledger – Finance & Management Guru</option>
+        </select>
+      </div>
+      <div style="display: flex; gap: 1rem; font-size: 0.9rem;">
+        <a href="https://github.com/IsherCoder/bolt/raw/main/terms%20and%20conditions.pdf" target="_blank" style="text-decoration: none; color: #4b5563;">📄 Terms</a>
+        <a href="https://forms.office.com/r/33SKdMEZ03" target="_blank" style="text-decoration: none; color: #4b5563;">💡 Suggest a Feature</a>
+        <a href="https://inpaint.model.tngtech.com/" target="_blank" style="text-decoration: none; color: #4b5563;">📷 Image generator</a>
+      </div>
+    </div>
 
     <div id="chatContainer">
       <div id="welcomeBanner">
@@ -226,9 +226,19 @@
     let currentChatId = null;
     modelSelect.value = selectedModel;
 
+    const modelWelcomeMessages = {
+      "Bolt O4 Nexus": "👋 Hey there! I’m Bolt O4 Nexus – your everyday assistant. Ask me anything.",
+      "Bolt O5 Forge": "🧑‍💻 Welcome! I'm Bolt O5 Forge, your coding wizard. Let’s build something cool.",
+      "Bolt O6 Vita": "💪 Hello! I’m Bolt O6 Vita – here for your health, fitness, and wellness goals.",
+      "Bolt O7 Quill": "✍️ Greetings! I’m Bolt O7 Quill – your writing expert. Need help drafting brilliance?",
+      "Bolt O8 Polyglot": "🌍 Bonjour! I’m Bolt O8 Polyglot – your elite translation companion.",
+      "Bolt O9 Ledger": "💼 Welcome! I’m Bolt O9 Ledger – your finance and management partner. Let’s talk strategy."
+    };
+
     function setModel() {
       selectedModel = modelSelect.value;
       localStorage.setItem("selectedModel", selectedModel);
+      renderChat();
     }
 
     function saveChat() {
@@ -296,10 +306,8 @@
     function renderChat() {
       chatContainer.innerHTML = "";
       if (!chatHistory.length) {
-        chatContainer.innerHTML = `<div id="welcomeBanner">
-          👋 Hello, I’m Bolt. How can I help you today?<br><br>
-          Type a question or select a model.
-        </div>`;
+        const welcome = modelWelcomeMessages[selectedModel] || "👋 Hello, I’m Bolt. How can I help you today?";
+        chatContainer.innerHTML = `<div id="welcomeBanner">${welcome}<br><br>Click “+ New Chat” to begin.</div>`;
       }
       chatHistory.forEach(msg => {
         const bubble = document.createElement("div");
@@ -349,18 +357,6 @@
       saveChat();
     }
 
-    function clearChat() {
-      chatHistory = [];
-      if (currentChatId) {
-        const allChats = JSON.parse(localStorage.getItem("boltChats") || "{}");
-        delete allChats[currentChatId];
-        localStorage.setItem("boltChats", JSON.stringify(allChats));
-        currentChatId = null;
-      }
-      renderChat();
-      loadChatList();
-    }
-
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -371,7 +367,5 @@
     loadChatList();
     renderChat();
   </script>
-
-</footer>
 </body>
 </html>

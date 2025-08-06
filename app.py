@@ -59,7 +59,7 @@ def chat():
     history = data.get("history", [])
     selected_model = data.get("selected_model", "Bolt O4 Nexus")
 
-    system_prompt = SYSTEM_PROMPTS.get(selected_model, SYSTEM_PROMPTS["Bolt 04 Nexus"])
+    system_prompt = SYSTEM_PROMPTS.get(selected_model, SYSTEM_PROMPTS["Bolt O4 Nexus"])
 
     # Add document context
     if uploaded_context:

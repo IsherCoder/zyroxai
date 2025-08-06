@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Isher AI</title>
+  <title>Bolt AI</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     * { box-sizing: border-box; }
@@ -226,7 +226,7 @@
 <div id="sidebar">
   <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
     <img src="https://i.postimg.cc/Kz82Wdg5/bolt-logo.png" alt="Bolt Logo" style="height: 36px; width: 36px; border-radius: 6px;" />
-    <h1 style="margin: 0; font-size: 1.3rem;">Isher AI</h1>
+    <h1 style="margin: 0; font-size: 1.3rem;">Bolt AI</h1>
   </div>
 
     <button id="newChatBtn" onclick="startNewChat()">+ New Chat</button>
@@ -237,12 +237,12 @@
     <div id="topBar">
       <div style="display: flex; gap: 0.5rem;">
         <select id="modelSelect" onchange="setModel()">
-          <option value="ISHER O4 Nexus">ISHER O4 Nexus – Everyday Assistant</option>
-          <option value="ISHER O5 Forge">ISHER O5 Forge – Coding Expert</option>
-          <option value="ISHER O6 Vita">ISHER O6 Vita – Health & Wellness Specialist</option>
-          <option value="ISHER O7 Quill">ISHER O7 Quill – Writing Assistant</option>
-          <option value="ISHER O8 Polyglot">ISHER O8 Polyglot – Elite Translation Companion</option>
-          <option value="ISHER O9 Ledger">ISHER O9 Ledger – Finance & Management Guru</option>
+          <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
+          <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
+          <option value="Bolt O6 Vita">Bolt O6 Vita – Health & Wellness Specialist</option>
+          <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
+          <option value="Bolt O8 Polyglot">Bolt O8 Polyglot – Elite Translation Companion</option>
+          <option value="Bolt O9 Ledger">Bolt O9 Ledger – Finance & Management Guru</option>
         </select>
       </div>
       <div style="display: flex; gap: 1rem; font-size: 0.9rem; align-items: center;">
@@ -269,17 +269,17 @@
     const chatList = document.getElementById('chatList');
 
     let chatHistory = [];
-    let selectedModel = localStorage.getItem("selectedModel") || "ISHER O4 Nexus";
+    let selectedModel = localStorage.getItem("selectedModel") || "Bolt O4 Nexus";
     let currentChatId = null;
     modelSelect.value = selectedModel;
 
     const modelWelcomeMessages = {
-      "ISHER O4 Nexus": "👋 Hey there! I’m ISHER O4 Nexus – your everyday assistant. Ask me anything.",
-      "ISHER O5 Forge": "🧑‍💻 Welcome! I'm ISHER O5 Forge, your coding wizard. Let’s build something cool.",
-      "ISHER O6 Vita": "💪 Hello! I’m ISHER O6 Vita – here for your health, fitness, and wellness goals.",
-      "ISHER O7 Quill": "✍️ Greetings! I’m ISHER O7 Quill – your writing expert. Need help drafting brilliance?",
-      "ISHER O8 Polyglot": "🌍 Bonjour! I’m ISHER O8 Polyglot – your elite translation companion.",
-      "ISHER O9 Ledger": "💼 Welcome! I’m ISHER O9 Ledger – your finance and management partner. Let’s talk strategy."
+      "Bolt O4 Nexus": "👋 Hey there! I’m Bolt O4 Nexus – your everyday assistant. Ask me anything.",
+      "Bolt O5 Forge": "🧑‍💻 Welcome! I'm Bolt O5 Forge, your coding wizard. Let’s build something cool.",
+      "Bolt O6 Vita": "💪 Hello! I’m Bolt O6 Vita – here for your health, fitness, and wellness goals.",
+      "Bolt O7 Quill": "✍️ Greetings! I’m Bolt O7 Quill – your writing expert. Need help drafting brilliance?",
+      "Bolt O8 Polyglot": "🌍 Bonjour! I’m Bolt O8 Polyglot – your elite translation companion.",
+      "Bolt O9 Ledger": "💼 Welcome! I’m Bolt O9 Ledger – your finance and management partner. Let’s talk strategy."
     };
 
     function setModel() {
@@ -357,7 +357,7 @@
     function renderChat() {
       chatContainer.innerHTML = "";
       if (!chatHistory.length) {
-        const welcome = modelWelcomeMessages[selectedModel] || "👋 Hello, I’m Isher. How can I help you today?";
+        const welcome = modelWelcomeMessages[selectedModel] || "👋 Hello, I’m Bolt. How can I help you today?";
         chatContainer.innerHTML = `<div id="welcomeBanner">${welcome}<br><br>Click “+ New Chat” to begin.</div>`;
       }
       chatHistory.forEach(msg => {

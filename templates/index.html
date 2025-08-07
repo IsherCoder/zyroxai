@@ -143,11 +143,9 @@
     .qa-item span.icon{ font-size: 1.1rem; width: 1.4rem; text-align: center; }
 
     /* ====== MOBILE MODE TOGGLE STYLES ====== */
-    /* Button to switch layouts */
     #layoutToggle{ background: transparent; border: 1px solid var(--border); color: var(--text); }
     #layoutToggle:hover{ border-color: var(--accent); color: var(--accent); background:#0c1110; }
 
-    /* Hamburger (only visible in mobile mode) */
     #hamburger{
       display: none; /* shown in .mobile-mode */
       background: transparent; border: 1px solid var(--border); color: var(--text);
@@ -155,8 +153,7 @@
     }
     #hamburger:hover{ border-color: var(--accent); color: var(--accent); }
 
-    /* When body has .mobile-mode, main goes full width & sidebar becomes overlay */
-    .mobile-mode body { overflow: hidden; } /* defensive */
+    .mobile-mode body { overflow: hidden; }
     .mobile-mode #sidebar{
       position: absolute; left: 0; top: 0; bottom: 0;
       transform: translateX(-100%); opacity: 0;
@@ -170,7 +167,6 @@
       position: absolute; inset: 0; background: rgba(0,0,0,0.35);
       display: none; z-index: 4;
     }
-    /* Sidebar open state */
     .mobile-mode.sidebar-open #sidebar{ transform: translateX(0); opacity: 1; z-index: 6; }
     .mobile-mode.sidebar-open #sidebarBackdrop{ display: block; }
 
@@ -238,7 +234,7 @@
         <span class="icon">💡</span> Suggest a Feature
       </a>
       <div class="qa-item" onclick="uploadFile()">
-        <span class="icon">📎</span> Upload files (PDF)
+        <span class="icon">📎</span> Upload PDF/Image (OCR)
       </div>
       <a class="qa-item" href="https://github.com/IsherCoder/bolt/raw/main/terms%20and%20conditions.pdf" target="_blank" rel="noopener">
         <span class="icon">📄</span> Terms & Conditions
@@ -397,7 +393,11 @@
     const res = await fetch("/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ history: chatHistory, selected_model: selectedModel })
+      body: JSON.stringify({
+        history: chatHistory,
+        selected_model: selectedModel,
+        custom_context: localStorage.getItem("boltCustomContext") || ""
+      })
     });
 
     const reader = res.body.getReader();
@@ -420,7 +420,7 @@
   function uploadFile() {
     const file = document.createElement('input');
     file.type = 'file';
-    file.accept = '.pdf';
+    file.accept = '.pdf,.docx,image/*,.webp'; // PDFs, Word, and images
     file.onchange = async () => {
       const selected = file.files[0];
       if (!selected) return;
@@ -428,25 +428,53 @@
       const formData = new FormData();
       formData.append("file", selected);
 
-      const res = await fetch("/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (data.extracted_text) {
-        alert("📄 PDF uploaded and processed!");
-        const allFiles = JSON.parse(localStorage.getItem("boltFiles") || "{}");
-        if (!allFiles[currentChatId]) allFiles[currentChatId] = [];
-        allFiles[currentChatId].push(selected.name);
-        localStorage.setItem("boltFiles", JSON.stringify(allFiles));
-        localStorage.setItem("boltCustomContext", data.extracted_text);
-        renderFiles();
+      const nameLower = selected.name.toLowerCase();
+      let endpoint = "";
+
+      if (nameLower.endsWith(".pdf") || selected.type === "application/pdf") {
+        endpoint = "/upload";
+      } else if (nameLower.endsWith(".docx") ||
+                 selected.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+        endpoint = "/upload";
+      } else if (selected.type.startsWith("image/") ||
+                 /\.(png|jpe?g|webp|bmp|tiff?)$/i.test(nameLower)) {
+        endpoint = "/ocr";
       } else {
-        alert("❌ Error: " + (data.error || "Unable to extract file."));
+        alert("❌ Unsupported file type. Please upload a PDF, DOCX, or an image.");
+        return;
+      }
+
+      try {
+        const res = await fetch(endpoint, { method: "POST", body: formData });
+        const data = await res.json();
+
+        if (data.extracted_text) {
+          alert(endpoint === "/ocr" ? "🖼️ Image processed with OCR!" : "📄 File uploaded and processed!");
+
+          const allFiles = JSON.parse(localStorage.getItem("boltFiles") || "{}");
+          if (!allFiles[currentChatId]) allFiles[currentChatId] = [];
+          allFiles[currentChatId].push(selected.name);
+          localStorage.setItem("boltFiles", JSON.stringify(allFiles));
+
+          // Append to existing custom context
+          const prev = localStorage.getItem("boltCustomContext") || "";
+          const combined = prev ? (prev + "\n\n" + data.extracted_text) : data.extracted_text;
+          localStorage.setItem("boltCustomContext", combined);
+
+          renderFiles();
+        } else {
+          alert("❌ Error: " + (data.error || "Unable to extract text."));
+        }
+      } catch (err) {
+        alert("❌ Upload failed: " + err.message);
       }
     };
     file.click();
   }
 
   // Enter to send (unchanged)
-  input.addEventListener("keydown", (e) => {
+  const inputEl = document.getElementById('userInput');
+  inputEl.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -467,7 +495,6 @@
   const hamburger = document.getElementById('hamburger');
   const sidebarBackdrop = document.getElementById('sidebarBackdrop');
 
-  // Persisted layout setting
   const savedLayout = localStorage.getItem('boltLayout') || 'desktop';
   if (savedLayout === 'mobile') enableMobileMode(); else enableDesktopMode();
 

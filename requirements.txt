@@ -1,8 +1,0 @@
-flask
-gunicorn
-Pillow
-openai
-python-dotenv
-PyMuPDF
-python-docx
-flask-cors

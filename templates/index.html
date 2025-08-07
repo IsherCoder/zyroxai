@@ -220,6 +220,7 @@
   <div id="chatList"></div>
 </div>
 
+<<<<<<< HEAD
 <div id="main">
   <div id="topBar">
     <button id="menuToggle" style="display:none;">☰ Menu</button>
@@ -232,6 +233,30 @@
         <option value="Bolt O8 Polyglot">Bolt O8 Polyglot – Elite Translation Companion</option>
         <option value="Bolt O9 Ledger">Bolt O9 Ledger – Finance & Management Guru</option>
       </select>
+=======
+    <button id="newChatBtn" onclick="startNewChat()">+ New Chat</button>
+    <div id="chatList"></div>
+  </div>
+
+  <div id="main">
+    <div id="topBar">
+      <div style="display: flex; gap: 0.5rem;">
+        <select id="modelSelect" onchange="setModel()">
+          <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
+          <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
+          <option value="Bolt O6 Vita">Bolt O6 Vita – Health & Wellness Specialist</option>
+          <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
+          <option value="Bolt O8 Polyglot">Bolt O8 Polyglot – Elite Translation Companion</option>
+          <option value="Bolt O9 Ledger">Bolt O9 Ledger – Finance & Management Guru</option>
+        </select>
+      </div>
+      <div style="display: flex; gap: 1rem; font-size: 0.9rem; align-items: center;">
+        <a href="https://github.com/IsherCoder/bolt/raw/main/terms%20and%20conditions.pdf" target="_blank" style="text-decoration: none; color: #4b5563;">📄 Terms</a>
+        <a href="https://forms.office.com/r/33SKdMEZ03" target="_blank" style="text-decoration: none; color: #4b5563;">💡 Suggest a Feature</a>
+        <a href="https://599a529fe09eede6a4.gradio.live/" target="_blank" style="text-decoration: none; color: #4b5563;">📷 Image generator</a>
+        <button onclick="uploadFile()" title="Upload PDF" style="all: unset; font-size: 0.9rem; cursor: pointer; color: #78350f; background-color: #fef3c7; border: 1px solid #fbbf24; border-radius: 5px; padding: 2px 6px;">📎 Upload</button>
+      </div>
+>>>>>>> 19f6cb03c061fde4bff36aac1468f9140ee409df
     </div>
     <div style="display: flex; gap: 1rem; font-size: 0.9rem; align-items: center; flex-wrap:wrap;">
       <a href="https://github.com/IsherCoder/bolt/raw/main/terms%20and%20conditions.pdf" target="_blank">📄 Terms</a>

@@ -5,57 +5,63 @@
   <title>Bolt AI</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
-    * { box-sizing: border-box; }
+    :root{
+      --bg:#0b0b0b;
+      --panel:#111214;
+      --panel-2:#15171a;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --border:#1f2937;
+      --accent:#00C853; /* swap to #1B5E20 or #00E676 if you want */
+      --accent-2:#00a846;
+    }
 
+    * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f9fafb;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
       display: flex;
       height: 100vh;
       overflow: hidden;
-      color: #111827;
+      color: var(--text);
     }
 
     #sidebar {
       width: 280px;
-      background-color: #111827;
-      color: white;
+      background: var(--panel);
+      color: var(--text);
       display: flex;
       flex-direction: column;
       padding: 1rem;
-      border-right: 1px solid #1f2937;
+      border-right: 1px solid var(--border);
     }
-
     #sidebar h1 {
-      font-size: 1.3rem;
+      font-size: 1.1rem;
       font-weight: 600;
       margin: 0 0 1rem 0;
+      color: var(--text);
     }
-
     #chatList {
       flex: 1;
       overflow-y: auto;
       padding-top: 1rem;
     }
-
     .chatItem {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background-color: #1f2937;
+      background-color: var(--panel-2);
       padding: 0.6rem 0.8rem;
       margin-bottom: 0.5rem;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 0.95rem;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, border 0.2s;
+      border: 1px solid transparent;
+      color: var(--text);
     }
-
-    .chatItem:hover {
-      background-color: #374151;
-    }
-
+    .chatItem:hover { border-color: var(--border); }
     .deleteBtn {
       background: none;
       border: none;
@@ -69,411 +75,492 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      background-color: #ffffff;
+      background-color: var(--panel);
     }
 
     #topBar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1rem;
-      border-bottom: 1px solid #e5e7eb;
-      background-color: #f3f4f6;
+      padding: 0.8rem 1rem;
+      border-bottom: 1px solid var(--border);
+      background-color: var(--panel-2);
+      gap: .75rem;
       flex-wrap: wrap;
     }
 
     select {
-      font-size: 1rem;
-      padding: 0.4rem 0.6rem;
-      border-radius: 8px;
-      border: 1px solid #ccc;
+      font-size: 0.95rem;
+      padding: 0.45rem 0.65rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0f1113;
+      color: var(--text);
+      outline: none;
     }
 
     button {
       padding: 0.6rem 1rem;
-      background-color: #2563eb;
-      color: white;
+      background-color: var(--accent);
+      color: #061007;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 0.95rem;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: transform .05s ease, background .2s ease;
+      font-weight: 600;
     }
+    button:hover { background-color: var(--accent-2); }
+    button:active { transform: translateY(1px); }
 
-    button:hover {
-      background-color: #1d4ed8;
-    }
-
-    #clearBtn {
-      background-color: #ef4444;
-    }
-
-    #clearBtn:hover {
-      background-color: #dc2626;
-    }
+    #clearBtn { background-color: #ef4444; color: white; }
+    #clearBtn:hover { background-color: #dc2626; }
 
     #chatContainer {
       flex: 1;
       overflow-y: auto;
       padding: 2rem;
-      background-color: #f9fafb;
+      background-color: var(--panel);
     }
 
     .message {
       max-width: 80%;
       padding: 1rem 1.2rem;
       margin-bottom: 1rem;
-      border-radius: 12px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      border-radius: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.25);
       font-size: 1rem;
       line-height: 1.5;
+      border: 1px solid var(--border);
+      color: var(--text);
     }
-
     .user {
       align-self: flex-end;
-      background-color: #dbeafe;
+      background: rgba(0,200,83,0.12);
+      border-color: rgba(0,200,83,0.35);
     }
-
     .bot {
       align-self: flex-start;
-      background-color: #e5e7eb;
-    }
-
-    #inputArea {
-      display: flex;
-      padding: 1rem;
-      border-top: 1px solid #e5e7eb;
-      background-color: #ffffff;
-    }
-
-    textarea {
-      flex: 1;
-      resize: none;
-      padding: 0.8rem;
-      border-radius: 8px;
-      font-size: 1rem;
-      border: 1px solid #d1d5db;
-      height: 2.8rem;
+      background: #0f1113;
     }
 
     #welcomeBanner {
       text-align: center;
-      color: #6b7280;
-      font-size: 1.3rem;
+      color: var(--muted);
+      font-size: 1.2rem;
       margin-top: 3rem;
     }
 
     #newChatBtn {
       margin-bottom: 1rem;
-      background-color: #10b981;
+      background-color: var(--accent);
+      color: #061007;
     }
+    #newChatBtn:hover { background-color: var(--accent-2); }
 
-    #newChatBtn:hover {
-      background-color: #059669;
-    }
-
+    /* Files row (kept, just dark themed) */
     #fileDisplay {
       display: flex;
       flex-wrap: nowrap;
       overflow-x: auto;
       font-size: 0.75rem;
-      padding: 4px 12px;
-      border-top: 1px solid #e5e7eb;
-      background-color: #fdfdea;
-      color: #78350f;
+      padding: 6px 12px;
+      border-top: 1px solid var(--border);
+      background-color: #0f1113;
+      color: #d1fae5;
       align-items: center;
       gap: 12px;
     }
-
     .fileBadge {
-      background-color: #fef08a;
-      border: 1px solid #fde047;
+      background-color: rgba(0,200,83,0.12);
+      border: 1px solid rgba(0,200,83,0.35);
       padding: 2px 6px;
-      border-radius: 6px;
+      border-radius: 8px;
       white-space: nowrap;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
+      color: #a7f3d0;
     }
-
     .fileBadge button {
       all: unset;
-      color: #dc2626;
+      color: #f87171;
       cursor: pointer;
       font-weight: bold;
       margin-left: 4px;
     }
+    .fileBadge span { font-size: 0.8rem; }
 
-    .fileBadge span {
-      font-size: 0.8rem;
+    /* PILL INPUT BAR */
+    #inputArea {
+      border-top: 1px solid var(--border);
+      background-color: var(--panel-2);
+      padding: 1rem;
     }
+    .inputPill {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      background: #0f1113;
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: .5rem .5rem .5rem .5rem;
+    }
+
+    /* + button in pill */
+    #plusBtn {
+      width: 40px; height: 40px;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      display: grid; place-items: center;
+      font-size: 20px;
+    }
+    #plusBtn:hover{ border-color: var(--accent); color: var(--accent); background: #0c1110; }
+
+    textarea {
+      flex: 1;
+      resize: none;
+      padding: .9rem 1rem;
+      border-radius: 9999px;
+      font-size: 1rem;
+      border: none;
+      outline: none;
+      height: 2.8rem;
+      color: var(--text);
+      background: transparent;
+    }
+
+    /* Up-arrow send */
+    #sendBtn {
+      width: 44px; height: 44px;
+      border-radius: 9999px;
+      display: grid; place-items: center;
+      font-size: 18px;
+      padding: 0;
+      color: #061007;
+      background: var(--accent);
+    }
+    #sendBtn:hover{ background: var(--accent-2); }
+
+    /* Quick actions popover */
+    #quickActions {
+      position: absolute;
+      bottom: 84px; /* sits above the pill */
+      left: 24px;
+      background: #0f1113;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: .5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      display: none;
+      min-width: 260px;
+      z-index: 50;
+    }
+    .qa-item {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .6rem .7rem;
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .qa-item:hover{
+      background: rgba(255,255,255,0.05);
+      color: var(--accent);
+    }
+    .qa-item span.icon { font-size: 1.1rem; width: 1.4rem; text-align: center; }
   </style>
 
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-BT7DVWBW5Y"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-BT7DVWBW5Y');
-</script>
-
-
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-BT7DVWBW5Y"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-BT7DVWBW5Y');
+  </script>
 </head>
 <body>
 
 <div id="sidebar">
-  <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+  <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem;">
     <img src="https://i.postimg.cc/Kz82Wdg5/bolt-logo.png" alt="Bolt Logo" style="height: 36px; width: 36px; border-radius: 6px;" />
-    <h1 style="margin: 0; font-size: 1.3rem;">Bolt by Abir Singh</h1>
+    <h1 style="margin: 0; font-size: 1.1rem;">Bolt by Abir Singh</h1>
   </div>
 
-    <button id="newChatBtn" onclick="startNewChat()">+ New Chat</button>
-    <div id="chatList"></div>
-  </div>
+  <button id="newChatBtn" onclick="startNewChat()">+ New Chat</button>
+  <div id="chatList"></div>
+</div>
 
-  <div id="main">
-    <div id="topBar">
-      <div style="display: flex; gap: 0.5rem;">
-        <select id="modelSelect" onchange="setModel()">
-          <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
-          <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
-          <option value="Bolt O6 Vita">Bolt O6 Vita – Health & Wellness Specialist</option>
-          <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
-          <option value="Bolt O8 Polyglot">Bolt O8 Polyglot – Elite Translation Companion</option>
-          <option value="Bolt O9 Ledger">Bolt O9 Ledger – Finance & Management Guru</option>
-        </select>
-      </div>
-      <div style="display: flex; gap: 1rem; font-size: 0.9rem; align-items: center;">
-        <a href="https://github.com/IsherCoder/bolt/raw/main/terms%20and%20conditions.pdf" target="_blank" style="text-decoration: none; color: #4b5563;">📄 Terms</a>
-        <a href="https://forms.office.com/r/33SKdMEZ03" target="_blank" style="text-decoration: none; color: #4b5563;">💡 Suggest a Feature</a>
-        <a href="https://e540240a3b5cec6961.gradio.live/" target="_blank" style="text-decoration: none; color: #4b5563;">📷 Image generator</a>
-        <button onclick="uploadFile()" title="Upload PDF" style="all: unset; font-size: 0.9rem; cursor: pointer; color: #78350f; background-color: #fef3c7; border: 1px solid #fbbf24; border-radius: 5px; padding: 2px 6px;">📎 Upload</button>
-      </div>
+<div id="main">
+  <div id="topBar">
+    <div style="display:flex; gap:0.5rem; align-items:center;">
+      <select id="modelSelect" onchange="setModel()">
+        <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
+        <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
+        <option value="Bolt O6 Vita">Bolt O6 Vita – Health & Wellness Specialist</option>
+        <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
+        <option value="Bolt O8 Polyglot">Bolt O8 Polyglot – Elite Translation Companion</option>
+        <option value="Bolt O9 Ledger">Bolt O9 Ledger – Finance & Management Guru</option>
+      </select>
     </div>
+    <!-- Removed: Terms/Suggest/Image/Upload links per request -->
+    <div style="height:1px;"></div>
+  </div>
 
-    <div id="chatContainer"></div>
-    <div id="fileDisplay"></div>
+  <div id="chatContainer"></div>
+  <div id="fileDisplay"></div>
 
-    <div id="inputArea">
+  <div id="inputArea">
+    <div class="inputPill">
+      <button id="plusBtn" title="Quick actions">+</button>
       <textarea id="userInput" placeholder="Type your question here..."></textarea>
-      <button onclick="sendMessage()">Send</button>
+      <button id="sendBtn" onclick="sendMessage()" title="Send">↑</button>
+    </div>
+    <!-- Popover -->
+    <div id="quickActions">
+      <a class="qa-item" href="https://e540240a3b5cec6961.gradio.live/" target="_blank" rel="noopener">
+        <span class="icon">📷</span> Image generator
+      </a>
+      <a class="qa-item" href="https://forms.office.com/r/33SKdMEZ03" target="_blank" rel="noopener">
+        <span class="icon">💡</span> Suggest a Feature
+      </a>
+      <div class="qa-item" onclick="uploadFile()">
+        <span class="icon">📎</span> Upload files (PDF)
+      </div>
+      <a class="qa-item" href="https://github.com/IsherCoder/bolt/raw/main/terms%20and%20conditions.pdf" target="_blank" rel="noopener">
+        <span class="icon">📄</span> Terms & Conditions
+      </a>
     </div>
   </div>
+</div>
 
-  <script>
-    const chatContainer = document.getElementById('chatContainer');
-    const modelSelect = document.getElementById('modelSelect');
-    const input = document.getElementById('userInput');
-    const chatList = document.getElementById('chatList');
+<script>
+  const chatContainer = document.getElementById('chatContainer');
+  const modelSelect = document.getElementById('modelSelect');
+  const input = document.getElementById('userInput');
+  const chatList = document.getElementById('chatList');
 
-    let chatHistory = [];
-    let selectedModel = localStorage.getItem("selectedModel") || "Bolt O4 Nexus";
-    let currentChatId = null;
-    modelSelect.value = selectedModel;
+  let chatHistory = [];
+  let selectedModel = localStorage.getItem("selectedModel") || "Bolt O4 Nexus";
+  let currentChatId = null;
+  modelSelect.value = selectedModel;
 
-    const modelWelcomeMessages = {
-      "Bolt O4 Nexus": "👋 Hey there! I’m Bolt O4 Nexus – your everyday assistant. Ask me anything.",
-      "Bolt O5 Forge": "🧑‍💻 Welcome! I'm Bolt O5 Forge, your coding wizard. Let’s build something cool.",
-      "Bolt O6 Vita": "💪 Hello! I’m Bolt O6 Vita – here for your health, fitness, and wellness goals.",
-      "Bolt O7 Quill": "✍️ Greetings! I’m Bolt O7 Quill – your writing expert. Need help drafting brilliance?",
-      "Bolt O8 Polyglot": "🌍 Bonjour! I’m Bolt O8 Polyglot – your elite translation companion.",
-      "Bolt O9 Ledger": "💼 Welcome! I’m Bolt O9 Ledger – your finance and management partner. Let’s talk strategy."
-    };
+  const modelWelcomeMessages = {
+    "Bolt O4 Nexus": "👋 Hey there! I’m Bolt O4 Nexus – your everyday assistant. Ask me anything.",
+    "Bolt O5 Forge": "🧑‍💻 Welcome! I'm Bolt O5 Forge, your coding wizard. Let’s build something cool.",
+    "Bolt O6 Vita": "💪 Hello! I’m Bolt O6 Vita – here for your health, fitness, and wellness goals.",
+    "Bolt O7 Quill": "✍️ Greetings! I’m Bolt O7 Quill – your writing expert. Need help drafting brilliance?",
+    "Bolt O8 Polyglot": "🌍 Bonjour! I’m Bolt O8 Polyglot – your elite translation companion.",
+    "Bolt O9 Ledger": "💼 Welcome! I’m Bolt O9 Ledger – your finance and management partner. Let’s talk strategy."
+  };
 
-    function setModel() {
-      selectedModel = modelSelect.value;
-      localStorage.setItem("selectedModel", selectedModel);
-      renderChat();
-    }
+  function setModel() {
+    selectedModel = modelSelect.value;
+    localStorage.setItem("selectedModel", selectedModel);
+    renderChat();
+  }
 
-    function saveChat() {
-      const allChats = JSON.parse(localStorage.getItem("boltChats") || "{}");
-      allChats[currentChatId] = chatHistory;
-      localStorage.setItem("boltChats", JSON.stringify(allChats));
-      loadChatList();
-    }
+  function saveChat() {
+    const allChats = JSON.parse(localStorage.getItem("boltChats") || "{}");
+    allChats[currentChatId] = chatHistory;
+    localStorage.setItem("boltChats", JSON.stringify(allChats));
+    loadChatList();
+  }
 
-    function loadChatList() {
-      chatList.innerHTML = "";
-      const allChats = JSON.parse(localStorage.getItem("boltChats") || "{}");
-      Object.keys(allChats).forEach(id => {
-        const firstMsg = allChats[id].find(m => m.role === "user");
-        const title = firstMsg ? firstMsg.content.slice(0, 30) + "..." : "Untitled Chat";
+  function loadChatList() {
+    chatList.innerHTML = "";
+    const allChats = JSON.parse(localStorage.getItem("boltChats") || "{}");
+    Object.keys(allChats).forEach(id => {
+      const firstMsg = allChats[id].find(m => m.role === "user");
+      const title = firstMsg ? firstMsg.content.slice(0, 30) + "..." : "Untitled Chat";
 
-        const div = document.createElement("div");
-        div.className = "chatItem";
+      const div = document.createElement("div");
+      div.className = "chatItem";
 
-        const titleSpan = document.createElement("span");
-        titleSpan.textContent = title;
-        titleSpan.style.flex = "1";
-        titleSpan.onclick = () => loadChat(id);
+      const titleSpan = document.createElement("span");
+      titleSpan.textContent = title;
+      titleSpan.style.flex = "1";
+      titleSpan.onclick = () => loadChat(id);
 
-        const delBtn = document.createElement("button");
-        delBtn.className = "deleteBtn";
-        delBtn.innerHTML = "🗑️";
-        delBtn.onclick = (e) => {
-          e.stopPropagation();
-          deleteChat(id);
-        };
-
-        div.appendChild(titleSpan);
-        div.appendChild(delBtn);
-        chatList.appendChild(div);
-      });
-    }
-
-    function deleteChat(id) {
-      const allChats = JSON.parse(localStorage.getItem("boltChats") || "{}");
-      delete allChats[id];
-      localStorage.setItem("boltChats", JSON.stringify(allChats));
-
-      const files = JSON.parse(localStorage.getItem("boltFiles") || "{}");
-      delete files[id];
-      localStorage.setItem("boltFiles", JSON.stringify(files));
-
-      if (currentChatId === id) {
-        chatHistory = [];
-        currentChatId = null;
-        renderChat();
-      }
-
-      loadChatList();
-    }
-
-    function loadChat(id) {
-      currentChatId = id;
-      chatHistory = JSON.parse(localStorage.getItem("boltChats"))[id];
-      renderChat();
-    }
-
-    function startNewChat() {
-      chatHistory = [];
-      currentChatId = Date.now().toString();
-      renderChat();
-    }
-
-    function renderChat() {
-      chatContainer.innerHTML = "";
-      if (!chatHistory.length) {
-        const welcome = modelWelcomeMessages[selectedModel] || "👋 Hello, I’m Bolt. How can I help you today?";
-        chatContainer.innerHTML = `<div id="welcomeBanner">${welcome}<br><br>Click “+ New Chat” to begin.</div>`;
-      }
-      chatHistory.forEach(msg => {
-        const bubble = document.createElement("div");
-        bubble.className = "message " + (msg.role === "user" ? "user" : "bot");
-        bubble.textContent = msg.content;
-        chatContainer.appendChild(bubble);
-      });
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-      renderFiles();
-    }
-
-    function renderFiles() {
-      const allFiles = JSON.parse(localStorage.getItem("boltFiles") || "{}");
-      const files = allFiles[currentChatId] || [];
-      const display = document.getElementById("fileDisplay");
-      display.innerHTML = "";
-
-      files.forEach((f, index) => {
-        const badge = document.createElement("div");
-        badge.className = "fileBadge";
-        badge.innerHTML = `📄 ${f} <span>✅</span> <button onclick="removeFile(${index})">✖</button>`;
-        display.appendChild(badge);
-      });
-    }
-
-    function removeFile(index) {
-      const allFiles = JSON.parse(localStorage.getItem("boltFiles") || "{}");
-      if (!allFiles[currentChatId]) return;
-      allFiles[currentChatId].splice(index, 1);
-      localStorage.setItem("boltFiles", JSON.stringify(allFiles));
-      renderFiles();
-    }
-
-    async function sendMessage() {
-      const text = input.value.trim();
-      if (!text) return;
-
-      const userMsg = { role: "user", content: text };
-      chatHistory.push(userMsg);
-      input.value = "";
-      renderChat();
-
-      const botMsg = { role: "assistant", content: "" };
-      chatHistory.push(botMsg);
-      const bubble = document.createElement("div");
-      bubble.className = "message bot";
-      chatContainer.appendChild(bubble);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-
-      const res = await fetch("/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ history: chatHistory, selected_model: selectedModel })
-      });
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        fullText += chunk;
-        bubble.textContent = fullText;
-        chatContainer.scrollTop = chatContainer.scrollHeight;
-      }
-
-      botMsg.content = fullText;
-      saveChat();
-    }
-
-    function uploadFile() {
-      const file = document.createElement('input');
-      file.type = 'file';
-      file.accept = '.pdf';
-      file.onchange = async () => {
-        const selected = file.files[0];
-        if (!selected) return;
-
-        const formData = new FormData();
-        formData.append("file", selected);
-
-        const res = await fetch("/upload", {
-          method: "POST",
-          body: formData
-        });
-
-        const data = await res.json();
-        if (data.extracted_text) {
-          alert("📄 PDF uploaded and processed!");
-
-          const allFiles = JSON.parse(localStorage.getItem("boltFiles") || "{}");
-          if (!allFiles[currentChatId]) allFiles[currentChatId] = [];
-          allFiles[currentChatId].push(selected.name);
-          localStorage.setItem("boltFiles", JSON.stringify(allFiles));
-
-          localStorage.setItem("boltCustomContext", data.extracted_text);
-          renderFiles();
-        } else {
-          alert("❌ Error: " + (data.error || "Unable to extract file."));
-        }
+      const delBtn = document.createElement("button");
+      delBtn.className = "deleteBtn";
+      delBtn.innerHTML = "🗑️";
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        deleteChat(id);
       };
-      file.click();
-    }
 
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-      }
+      div.appendChild(titleSpan);
+      div.appendChild(delBtn);
+      chatList.appendChild(div);
     });
+  }
+
+  function deleteChat(id) {
+    const allChats = JSON.parse(localStorage.getItem("boltChats") || "{}");
+    delete allChats[id];
+    localStorage.setItem("boltChats", JSON.stringify(allChats));
+
+    const files = JSON.parse(localStorage.getItem("boltFiles") || "{}");
+    delete files[id];
+    localStorage.setItem("boltFiles", JSON.stringify(files));
+
+    if (currentChatId === id) {
+      chatHistory = [];
+      currentChatId = null;
+      renderChat();
+    }
 
     loadChatList();
+  }
+
+  function loadChat(id) {
+    currentChatId = id;
+    chatHistory = JSON.parse(localStorage.getItem("boltChats"))[id];
     renderChat();
-  </script>
+  }
+
+  function startNewChat() {
+    chatHistory = [];
+    currentChatId = Date.now().toString();
+    renderChat();
+  }
+
+  function renderChat() {
+    chatContainer.innerHTML = "";
+    if (!chatHistory.length) {
+      const welcome = modelWelcomeMessages[selectedModel] || "👋 Hello, I’m Bolt. How can I help you today?";
+      chatContainer.innerHTML = `<div id="welcomeBanner">${welcome}<br><br>Click “+ New Chat” to begin.</div>`;
+    }
+    chatHistory.forEach(msg => {
+      const bubble = document.createElement("div");
+      bubble.className = "message " + (msg.role === "user" ? "user" : "bot");
+      bubble.textContent = msg.content;
+      chatContainer.appendChild(bubble);
+    });
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    renderFiles();
+  }
+
+  function renderFiles() {
+    const allFiles = JSON.parse(localStorage.getItem("boltFiles") || "{}");
+    const files = allFiles[currentChatId] || [];
+    const display = document.getElementById("fileDisplay");
+    display.innerHTML = "";
+
+    files.forEach((f, index) => {
+      const badge = document.createElement("div");
+      badge.className = "fileBadge";
+      badge.innerHTML = `📄 ${f} <span>✅</span> <button onclick="removeFile(${index})">✖</button>`;
+      display.appendChild(badge);
+    });
+  }
+
+  function removeFile(index) {
+    const allFiles = JSON.parse(localStorage.getItem("boltFiles") || "{}");
+    if (!allFiles[currentChatId]) return;
+    allFiles[currentChatId].splice(index, 1);
+    localStorage.setItem("boltFiles", JSON.stringify(allFiles));
+    renderFiles();
+  }
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    const userMsg = { role: "user", content: text };
+    chatHistory.push(userMsg);
+    input.value = "";
+    renderChat();
+
+    const botMsg = { role: "assistant", content: "" };
+    chatHistory.push(botMsg);
+    const bubble = document.createElement("div");
+    bubble.className = "message bot";
+    chatContainer.appendChild(bubble);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    const res = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ history: chatHistory, selected_model: selectedModel })
+    });
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      fullText += chunk;
+      bubble.textContent = fullText;
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    botMsg.content = fullText;
+    saveChat();
+  }
+
+  function uploadFile() {
+    const file = document.createElement('input');
+    file.type = 'file';
+    file.accept = '.pdf';
+    file.onchange = async () => {
+      const selected = file.files[0];
+      if (!selected) return;
+
+      const formData = new FormData();
+      formData.append("file", selected);
+
+      const res = await fetch("/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      if (data.extracted_text) {
+        alert("📄 PDF uploaded and processed!");
+        const allFiles = JSON.parse(localStorage.getItem("boltFiles") || "{}");
+        if (!allFiles[currentChatId]) allFiles[currentChatId] = [];
+        allFiles[currentChatId].push(selected.name);
+        localStorage.setItem("boltFiles", JSON.stringify(allFiles));
+        localStorage.setItem("boltCustomContext", data.extracted_text);
+        renderFiles();
+      } else {
+        alert("❌ Error: " + (data.error || "Unable to extract file."));
+      }
+    };
+    file.click();
+  }
+
+  // Enter to send (unchanged)
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Quick actions popover toggle
+  const plusBtn = document.getElementById('plusBtn');
+  const quick = document.getElementById('quickActions');
+  plusBtn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    quick.style.display = quick.style.display === 'block' ? 'none' : 'block';
+  });
+  document.addEventListener('click', ()=>{
+    quick.style.display = 'none';
+  });
+
+  loadChatList();
+  renderChat();
+</script>
 </body>
 </html>

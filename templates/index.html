@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Bolt AI</title>
+  <title>Zyrox AI</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     :root{
@@ -192,8 +192,8 @@
 
 <div id="sidebar">
   <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem;">
-    <img src="https://i.postimg.cc/Kz82Wdg5/bolt-logo.png" alt="Bolt Logo" style="height: 36px; width: 36px; border-radius: 6px;" />
-    <h1 style="margin: 0; font-size: 1.1rem;">Bolt by Abir Singh</h1>
+    <img src="https://i.postimg.cc/Kz82Wdg5/bolt-logo.png" alt="Zyrox Logo" style="height: 36px; width: 36px; border-radius: 6px;" />
+    <h1 style="margin: 0; font-size: 1.1rem;">Zyrox</h1>
   </div>
 
   <button id="newChatBtn" onclick="startNewChat()">+ New Chat</button>
@@ -205,12 +205,12 @@
     <div style="display:flex; gap:.5rem; align-items:center;">
       <button id="hamburger" title="Open chats">☰</button>
       <select id="modelSelect" onchange="setModel()">
-        <option value="Bolt O4 Nexus">Bolt O4 Nexus – Everyday Assistant</option>
-        <option value="Bolt O5 Forge">Bolt O5 Forge – Coding Expert</option>
-        <option value="Bolt O6 Vita">Bolt O6 Vita – Health & Wellness Specialist</option>
-        <option value="Bolt O7 Quill">Bolt O7 Quill – Writing Assistant</option>
-        <option value="Bolt O8 Polyglot">Bolt O8 Polyglot – Elite Translation Companion</option>
-        <option value="Bolt O9 Ledger">Bolt O9 Ledger – Finance & Management Guru</option>
+        <option value="Zyrox O4 Nexus">Zyrox O4 Nexus – Everyday Assistant</option>
+        <option value="Zyrox O5 Forge">Zyrox O5 Forge – Coding Expert</option>
+        <option value="Zyron O6 Vita">Zyrox O6 Vita – Health & Wellness Specialist</option>
+        <option value="Zyrox O7 Quill">Zyrox O7 Quill – Writing Assistant</option>
+        <option value="Zyrox O8 Polyglot">Zyrox O8 Polyglot – Elite Translation Companion</option>
+        <option value="Zyrox O9 Ledger">Zyrox O9 Ledger – Finance & Management Guru</option>
       </select>
     </div>
 
@@ -275,17 +275,17 @@
   const webRecencySel = document.getElementById('webRecency');
 
   let chatHistory = [];
-  let selectedModel = localStorage.getItem("selectedModel") || "Bolt O4 Nexus";
+  let selectedModel = localStorage.getItem("selectedModel") || "Zyrox O4 Nexus";
   let currentChatId = null;
   modelSelect.value = selectedModel;
 
   const modelWelcomeMessages = {
-    "Bolt O4 Nexus": "👋 Hey there! I’m Bolt O4 Nexus – your everyday assistant. Ask me anything.",
-    "Bolt O5 Forge": "🧑‍💻 Welcome! I'm Bolt O5 Forge, your coding wizard. Let’s build something cool.",
-    "Bolt O6 Vita": "💪 Hello! I’m Bolt O6 Vita – here for your health, fitness, and wellness goals.",
-    "Bolt O7 Quill": "✍️ Greetings! I’m Bolt O7 Quill – your writing expert. Need help drafting brilliance?",
-    "Bolt O8 Polyglot": "🌍 Bonjour! I’m Bolt O8 Polyglot – your elite translation companion.",
-    "Bolt O9 Ledger": "💼 Welcome! I’m Bolt O9 Ledger – your finance and management partner. Let’s talk strategy."
+    "Zyrox O4 Nexus": "👋 Hey there! I’m Zyrox O4 Nexus – your everyday assistant. Ask me anything.",
+    "Zyrox O5 Forge": "🧑‍💻 Welcome! I'm Zyrox O5 Forge, your coding wizard. Let’s build something cool.",
+    "Zyrox O6 Vita": "💪 Hello! I’m Zyrox O6 Vita – here for your health, fitness, and wellness goals.",
+    "Zyrox O7 Quill": "✍️ Greetings! I’m Zyrox O7 Quill – your writing expert. Need help drafting brilliance?",
+    "Zyrox O8 Polyglot": "🌍 Bonjour! I’m Zyrox O8 Polyglot – your elite translation companion.",
+    "Zyrox O9 Ledger": "💼 Welcome! I’m Zyrox O9 Ledger – your finance and management partner. Let’s talk strategy."
   };
 
   function setModel() {
@@ -363,7 +363,7 @@
   function renderChat() {
     chatContainer.innerHTML = "";
     if (!chatHistory.length) {
-      const welcome = modelWelcomeMessages[selectedModel] || "👋 Hello, I’m Bolt. How can I help you today?";
+      const welcome = modelWelcomeMessages[selectedModel] || "👋 Hello, I’m Zyrox. How can I help you today?";
       chatContainer.innerHTML = `<div id="welcomeBanner">${welcome}<br><br>Click “+ New Chat” to begin.</div>`;
     }
     chatHistory.forEach(msg => {

@@ -169,7 +169,7 @@ def chat():
     messages = [{"role": "system", "content": system_prompt}] + history
 
     completion = groq.chat.completions.create(
-        model="llama3-70b-8192",
+        model="openai/gpt-oss-120b",
         messages=messages,
         stream=True
     )
@@ -181,4 +181,4 @@ def chat():
     return Response(generate(), mimetype="text/plain")
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)

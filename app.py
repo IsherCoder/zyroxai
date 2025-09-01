@@ -128,7 +128,7 @@ def web_search():
 
         try:
             comp = groq.chat.completions.create(
-                model="llama3-70b-8192",
+                model="openai/gpt-oss-20b",
                 temperature=0.2,
                 max_tokens=700,
                 messages=[

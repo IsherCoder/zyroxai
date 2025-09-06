@@ -22,7 +22,20 @@ groq = OpenAI(
 # Store uploaded document text
 uploaded_context = ""
 
+# ===== System prompts for modes + specialized models =====
 SYSTEM_PROMPTS = {
+    # New core modes
+    "Instant": (
+        "You are Zyrox Instant. Answer ONLY the user's question as briefly and directly as possible. "
+        "No extra commentary, no disclaimers, no step-by-step unless explicitly asked. "
+        "Prefer a single sentence or a compact list of bullets (max 4)."
+    ),
+    "DeepThink": (
+        "You are Zyrox DeepThink. Provide a thorough, well-structured, deeply reasoned answer. "
+        "Explain assumptions, consider edge cases, and include actionable steps or examples where useful."
+    ),
+
+    # Specialized models (unchanged from your previous mapping, kept here)
     "Zyrox O4 Nexus": "You are Zyrox O4 Nexus, an efficient, friendly AI assistant that helps with any task in a concise and smart way. Always be helpful and clear.",
     "Zyrox O5 Forge": "You are Zyrox O5 Forge, a highly skilled coding and developer assistant. You answer technically, clearly, and with precision.",
     "Zyrox O6 Vita": "You are Zyrox O6 Vita, a compassionate and knowledgeable health and wellness assistant. Offer personalised guidance on nutrition, fitness, mental health, and lifestyle choices in a warm, clear tone.",
@@ -33,6 +46,7 @@ SYSTEM_PROMPTS = {
 
 @app.route("/")
 def index():
+    # Ensure your template filename matches this (index.html)
     return render_template("index.html")
 
 @app.route("/upload", methods=["POST"])
@@ -54,7 +68,7 @@ def upload_file():
     uploaded_context = text[:10000]  # Limit to 10k characters
     return jsonify({"extracted_text": uploaded_context})
 
-# ========= NEW: Web Search Endpoint (DuckDuckGo) =========
+# ========= DuckDuckGo search =========
 def _ddg_text(q, max_results=8, region="uk-en", safesearch="moderate", timelimit=None):
     with DDGS() as ddgs:
         return list(ddgs.text(
@@ -147,31 +161,46 @@ def web_search():
         "answer": answer
     })
 
-# ========= Chat (unchanged) =========
+# ========= Chat =========
 @app.route("/chat", methods=["POST"])
 def chat():
     global uploaded_context
     data = request.get_json()
     history = data.get("history", [])
-    selected_model = data.get("selected_model", "Zyrox O4 Nexus")
+    selected_label = data.get("selected_model", "Instant")  # "Instant", "DeepThink", or one of the specialized labels
 
-    system_prompt = SYSTEM_PROMPTS.get(selected_model, SYSTEM_PROMPTS["Zyrox O4 Nexus"])
+    # Build the base system prompt
+    system_prompt = SYSTEM_PROMPTS.get(selected_label, SYSTEM_PROMPTS["Instant"])
 
-    # Add document context
+    # Add document context if any
     if uploaded_context:
         system_prompt += f"\n\nYou also have access to the following information from a document:\n{uploaded_context}"
 
-    # Optionally include a web_summary (if frontend sent one)
+    # Include web summary (if provided)
     web_summary = data.get("web_summary")
     if web_summary:
         system_prompt += f"\n\nUse these recent web findings when helpful:\n{web_summary}"
 
     messages = [{"role": "system", "content": system_prompt}] + history
 
+    # Adjust generation behavior by mode
+    if selected_label == "Instant":
+        temperature = 0.2
+        max_tokens = 256
+    elif selected_label == "DeepThink":
+        temperature = 0.3
+        max_tokens = 1400
+    else:
+        # Specialized defaults (can be tuned per model later)
+        temperature = 0.25
+        max_tokens = 900
+
     completion = groq.chat.completions.create(
-        model="openai/gpt-oss-20b",
+        model="openai/gpt-oss-20b",   # keep your current underlying model
         messages=messages,
-        stream=True
+        stream=True,
+        temperature=temperature,
+        max_tokens=max_tokens
     )
 
     def generate():

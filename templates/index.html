@@ -202,19 +202,28 @@
 
 <div id="main">
   <div id="topBar">
-    <div style="display:flex; gap:.5rem; align-items:center;">
+    <div style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
       <button id="hamburger" title="Open chats">☰</button>
-      <select id="modelSelect" onchange="setModel()">
+
+      <!-- PRIMARY MODE SELECTOR -->
+      <select id="modeSelect" onchange="onModeChange()">
+        <option value="Instant">Instant – Answers Right Away</option>
+        <option value="DeepThink">DeepThink – Thinks Longer For Better Answers</option>
+        <option value="Specialized">Specialized Models</option>
+      </select>
+
+      <!-- SECONDARY: appears only for Specialized -->
+      <select id="specializedSelect" style="display:none;" onchange="setModelFromSpecialized()">
         <option value="Zyrox O4 Nexus">Zyrox O4 Nexus – Everyday Assistant</option>
         <option value="Zyrox O5 Forge">Zyrox O5 Forge – Coding Expert</option>
-        <option value="Zyron O6 Vita">Zyrox O6 Vita – Health & Wellness Specialist</option>
+        <option value="Zyrox O6 Vita">Zyrox O6 Vita – Health & Wellness Specialist</option>
         <option value="Zyrox O7 Quill">Zyrox O7 Quill – Writing Assistant</option>
         <option value="Zyrox O8 Polyglot">Zyrox O8 Polyglot – Elite Translation Companion</option>
         <option value="Zyrox O9 Ledger">Zyrox O9 Ledger – Finance & Management Guru</option>
       </select>
     </div>
 
-    <!-- NEW: Web Search Controls -->
+    <!-- Web Search Controls -->
     <div style="display:flex; gap:.5rem; align-items:center; flex-wrap: wrap;">
       <label style="display:flex; align-items:center; gap:.4rem; cursor:pointer;">
         <input type="checkbox" id="webToggle" />
@@ -266,7 +275,6 @@
 <script>
   /* ====== State ====== */
   const chatContainer = document.getElementById('chatContainer');
-  const modelSelect = document.getElementById('modelSelect');
   const input = document.getElementById('userInput');
   const chatList = document.getElementById('chatList');
 
@@ -274,22 +282,50 @@
   const webModeSel = document.getElementById('webMode');
   const webRecencySel = document.getElementById('webRecency');
 
+  const modeSelect = document.getElementById('modeSelect');
+  const specializedSelect = document.getElementById('specializedSelect');
+
   let chatHistory = [];
-  let selectedModel = localStorage.getItem("selectedModel") || "Zyrox O4 Nexus";
-  let currentChatId = null;
-  modelSelect.value = selectedModel;
+  // Persist selections
+  const savedMode = localStorage.getItem("zyroxMode") || "Instant";
+  const savedSpecialized = localStorage.getItem("zyroxSpecialized") || "Zyrox O4 Nexus";
+  modeSelect.value = savedMode;
+  specializedSelect.value = savedSpecialized;
+  if (savedMode === "Specialized") specializedSelect.style.display = "inline-block";
+
+  // Current effective “model label” sent to backend:
+  let selectedModel = savedMode === "Specialized" ? savedSpecialized : savedMode;
 
   const modelWelcomeMessages = {
-    "Zyrox O4 Nexus": "👋 Hey there! I’m Zyrox O4 Nexus – your everyday assistant. Ask me anything.",
-    "Zyrox O5 Forge": "🧑‍💻 Welcome! I'm Zyrox O5 Forge, your coding wizard. Let’s build something cool.",
-    "Zyrox O6 Vita": "💪 Hello! I’m Zyrox O6 Vita – here for your health, fitness, and wellness goals.",
-    "Zyrox O7 Quill": "✍️ Greetings! I’m Zyrox O7 Quill – your writing expert. Need help drafting brilliance?",
-    "Zyrox O8 Polyglot": "🌍 Bonjour! I’m Zyrox O8 Polyglot – your elite translation companion.",
-    "Zyrox O9 Ledger": "💼 Welcome! I’m Zyrox O9 Ledger – your finance and management partner. Let’s talk strategy."
+    "Instant": "⚡ Instant mode: short, direct answers. Ask away.",
+    "DeepThink": "🧠 DeepThink mode: thorough, detailed reasoning.",
+    "Zyrox O4 Nexus": "👋 I’m Zyrox O4 Nexus – your everyday assistant.",
+    "Zyrox O5 Forge": "🧑‍💻 I’m Zyrox O5 Forge – your coding wizard.",
+    "Zyrox O6 Vita": "💪 I’m Zyrox O6 Vita – health & wellness support.",
+    "Zyrox O7 Quill": "✍️ I’m Zyrox O7 Quill – your writing expert.",
+    "Zyrox O8 Polyglot": "🌍 I’m Zyrox O8 Polyglot – elite translation.",
+    "Zyrox O9 Ledger": "💼 I’m Zyrox O9 Ledger – finance & management."
   };
 
-  function setModel() {
-    selectedModel = modelSelect.value;
+  function onModeChange() {
+    const mode = modeSelect.value;
+    localStorage.setItem("zyroxMode", mode);
+
+    if (mode === "Specialized") {
+      specializedSelect.style.display = "inline-block";
+      selectedModel = specializedSelect.value;
+    } else {
+      specializedSelect.style.display = "none";
+      selectedModel = mode; // "Instant" or "DeepThink"
+    }
+    localStorage.setItem("selectedModel", selectedModel);
+    renderChat();
+  }
+
+  function setModelFromSpecialized() {
+    const val = specializedSelect.value;
+    localStorage.setItem("zyroxSpecialized", val);
+    selectedModel = val;
     localStorage.setItem("selectedModel", selectedModel);
     renderChat();
   }
@@ -354,6 +390,7 @@
     renderChat();
   }
 
+  let currentChatId = null;
   function startNewChat() {
     chatHistory = [];
     currentChatId = Date.now().toString();
@@ -456,7 +493,6 @@
         const data = await duckSearch(text, mode, timelimit);
 
         if (mode === "images") {
-          // Show image grid bubble
           chatHistory.push({ role: "assistant", content: data.results, type: "images" });
           renderBubble("assistant", data.results, "images");
         } else {
@@ -464,8 +500,6 @@
           const summaryBubble = `🔎 Web summary (${mode})\n\n${summary}`;
           chatHistory.push({ role: "assistant", content: summaryBubble });
           renderBubble("assistant", summaryBubble);
-
-          // Feed the summary to the LLM as extra system context
           web_summary_for_model = summary;
         }
       } catch (e) {
@@ -475,11 +509,17 @@
       }
     }
 
-    // Now call the chat completion (stream)
+    // Decide what label to send (Instant / DeepThink / Specialized name)
+    const payloadSelected = selectedModel;
+
     const res = await fetch("/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ history: chatHistory, selected_model: selectedModel, web_summary: web_summary_for_model })
+      body: JSON.stringify({
+        history: chatHistory,
+        selected_model: payloadSelected,
+        web_summary: web_summary_for_model
+      })
     });
 
     const reader = res.body.getReader();

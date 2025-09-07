@@ -121,11 +121,6 @@
       border: 1px solid var(--border); display: grid; place-items: center; font-size: 20px;
     }
     #plusBtn:hover{ border-color: var(--accent); color: var(--accent); background: #0c1110; }
-    #imageBtn{
-      width: 40px; height: 40px; border-radius: 999px; background: transparent; color: var(--text);
-      border: 1px solid var(--border); display: grid; place-items: center; font-size: 18px;
-    }
-    #imageBtn:hover{ border-color: var(--accent); color: var(--accent); background:#0c1110; }
     textarea{
       flex: 1; resize: none; padding: .9rem 1rem; border-radius: 9999px; font-size: 1rem;
       border: none; outline: none; height: 2.8rem; color: var(--text); background: transparent;
@@ -263,8 +258,7 @@
     <div class="inputPill">
       <button id="plusBtn" title="Quick actions">+</button>
 
-      <!-- Image attach -->
-      <button id="imageBtn" title="Attach image">Upload Image</button>
+      <!-- Hidden image input + inline preview (thumbnail shows after picking) -->
       <input id="imageInput" type="file" accept="image/*" style="display:none">
       <img id="imageThumb" alt="preview">
 
@@ -279,6 +273,9 @@
       <a class="qa-item" href="https://forms.office.com/r/33SKdMEZ03" target="_blank" rel="noopener">
         <span class="icon">💡</span> Suggest a Feature
       </a>
+      <div class="qa-item" onclick="openImagePicker()">
+        <span class="icon">🖼️</span> Upload image
+      </div>
       <div class="qa-item" onclick="uploadFile()">
         <span class="icon">📎</span> Upload files (PDF)
       </div>
@@ -302,8 +299,7 @@
   const modeSelect = document.getElementById('modeSelect');
   const specializedSelect = document.getElementById('specializedSelect');
 
-  // Image attach UI state
-  const imageBtn = document.getElementById('imageBtn');
+  // Image attach UI state (triggered from Quick Actions)
   const imageInput = document.getElementById('imageInput');
   const imageThumb = document.getElementById('imageThumb');
   let pendingImageFile = null;
@@ -313,7 +309,10 @@
     return (s || "").replace(/[&<>\"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
   }
 
-  imageBtn.addEventListener('click', () => imageInput.click());
+  function openImagePicker(){
+    imageInput.click();
+  }
+
   imageInput.addEventListener('change', () => {
     const f = imageInput.files[0];
     if (f) {
@@ -643,6 +642,8 @@
   }
 
   // Enter to send
+  const plusBtn = document.getElementById('plusBtn');
+  const quick = document.getElementById('quickActions');
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -651,8 +652,6 @@
   });
 
   // Quick actions popover toggle
-  const plusBtn = document.getElementById('plusBtn');
-  const quick = document.getElementById('quickActions');
   plusBtn.addEventListener('click', (e)=>{
     e.stopPropagation();
     quick.style.display = quick.style.display === 'block' ? 'none' : 'block';

@@ -1,44 +1,39 @@
 from flask import Flask, request, jsonify, Response, render_template
+from openai import OpenAI
 from dotenv import load_dotenv
-from flask_cors import CORS
-from groq import Groq
-
 import os
-import io
+import fitz  # PyMuPDF for PDFs
+import docx  # python-docx for Word
+from flask_cors import CORS
+
+# DuckDuckGo Search
+from duckduckgo_search import DDGS
+
+# Image upload helpers
 import json
 import base64
 import mimetypes
-
-import fitz  # PyMuPDF for PDFs
-import docx  # python-docx for Word
-
-# NEW: DuckDuckGo Search
-from duckduckgo_search import DDGS
 
 load_dotenv()
 app = Flask(__name__, static_folder="static", template_folder="templates")
 CORS(app)
 
-# Groq client
-gclient = Groq(api_key=os.getenv("GROQ_API_KEY"))
+groq = OpenAI(
+    api_key=os.getenv("GROQ_API_KEY"),
+    base_url="https://api.groq.com/openai/v1"
+)
 
-# Store uploaded document text
+# ========= Config =========
 uploaded_context = ""
 
-# ===== System prompts for modes + specialized models =====
-SYSTEM_PROMPTS = {
-    # New core modes
-    "Instant": (
-        "You are Zyrox Instant. Answer ONLY the user's question as briefly and directly as possible. "
-        "No extra commentary, no disclaimers, no step-by-step unless explicitly asked. "
-        "Prefer a single sentence or a compact list of bullets (max 4)."
-    ),
-    "DeepThink": (
-        "You are Zyrox DeepThink. Provide a thorough, well-structured, deeply reasoned answer. "
-        "Explain assumptions, consider edge cases, and include actionable steps or examples where useful."
-    ),
+SUPPRESS_LLM_WHEN_WEB_SUMMARY = (os.getenv("SUPPRESS_LLM_WHEN_WEB_SUMMARY", "true").lower()
+                                 in ("1", "true", "yes", "y", "on"))
 
-    # Specialized models
+DEFAULT_GROQ_MODEL = os.getenv("DEFAULT_GROQ_MODEL", "openai/gpt-oss-20b")          # text
+SUMMARIZER_MODEL   = os.getenv("SUMMARIZER_MODEL",   "openai/gpt-oss-20b")          # web_summary
+VISION_MODEL       = os.getenv("VISION_MODEL",       "meta-llama/llama-4-scout-17b-16e-instruct")  # images
+
+SYSTEM_PROMPTS = {
     "Zyrox O4 Nexus": "You are Zyrox O4 Nexus, an efficient, friendly AI assistant that helps with any task in a concise and smart way. Always be helpful and clear.",
     "Zyrox O5 Forge": "You are Zyrox O5 Forge, a highly skilled coding and developer assistant. You answer technically, clearly, and with precision.",
     "Zyrox O6 Vita": "You are Zyrox O6 Vita, a compassionate and knowledgeable health and wellness assistant. Offer personalised guidance on nutrition, fitness, mental health, and lifestyle choices in a warm, clear tone.",
@@ -47,10 +42,18 @@ SYSTEM_PROMPTS = {
     "Zyrox O9 Ledger": "You are Zyrox O9 Ledger, a strategic expert in finance, business operations, and management consulting. Answer clearly, insightfully, and with practical examples from real-world finance."
 }
 
+def _truthy(v):
+    if v is None:
+        return False
+    if isinstance(v, bool):
+        return v
+    return str(v).strip().lower() in ("1", "true", "yes", "y", "on")
+
 @app.route("/")
 def index():
     return render_template("index.html")
 
+# ========= Upload =========
 @app.route("/upload", methods=["POST"])
 def upload_file():
     global uploaded_context
@@ -58,54 +61,41 @@ def upload_file():
     if not file:
         return jsonify({"error": "No file uploaded"}), 400
 
-    filename = (file.filename or "").lower()
-    try:
-        if filename.endswith(".pdf"):
-            doc = fitz.open(stream=file.read(), filetype="pdf")
-            text = "\n".join([page.get_text() for page in doc])
-        elif filename.endswith(".docx"):
-            # python-docx can read file-like objects
-            file.stream.seek(0)
-            d = docx.Document(file)
-            text = "\n".join([para.text for para in d.paragraphs])
-        else:
-            return jsonify({"error": "Unsupported file type"}), 400
-    except Exception as e:
-        return jsonify({"error": f"Failed to parse document: {e}"}), 500
+    if file.filename.lower().endswith(".pdf"):
+        doc = fitz.open(stream=file.read(), filetype="pdf")
+        text = "\n".join([page.get_text() for page in doc])
+    elif file.filename.lower().endswith(".docx"):
+        d = docx.Document(file)
+        text = "\n".join([para.text for para in d.paragraphs])
+    else:
+        return jsonify({"error": "Unsupported file type"}), 400
 
-    uploaded_context = (text or "")[:10000]  # Limit to 10k characters
+    uploaded_context = text[:10000]
     return jsonify({"extracted_text": uploaded_context})
 
-# ========= DuckDuckGo search =========
+# ========= DuckDuckGo helpers =========
 def _ddg_text(q, max_results=8, region="uk-en", safesearch="moderate", timelimit=None):
     with DDGS() as ddgs:
         return list(ddgs.text(
-            keywords=q,
-            region=region,
-            safesearch=safesearch,
-            timelimit=timelimit,
-            max_results=max_results
+            keywords=q, region=region, safesearch=safesearch,
+            timelimit=timelimit, max_results=max_results
         ))
 
 def _ddg_news(q, max_results=8, region="uk-en", safesearch="moderate", timelimit=None):
     with DDGS() as ddgs:
         return list(ddgs.news(
-            keywords=q,
-            region=region,
-            safesearch=safesearch,
-            timelimit=timelimit,
-            max_results=max_results
+            keywords=q, region=region, safesearch=safesearch,
+            timelimit=timelimit, max_results=max_results
         ))
 
 def _ddg_images(q, max_results=8, region="uk-en", safesearch="moderate"):
     with DDGS() as ddgs:
         return list(ddgs.images(
-            keywords=q,
-            region=region,
-            safesearch=safesearch,
+            keywords=q, region=region, safesearch=safesearch,
             max_results=max_results
         ))
 
+# ========= Web Search (🔎 Web summary only) =========
 @app.route("/web_search", methods=["POST"])
 def web_search():
     data = request.get_json(force=True)
@@ -115,7 +105,7 @@ def web_search():
     region = data.get("region") or "uk-en"
     safesearch = data.get("safesearch") or "moderate"
     timelimit = data.get("timelimit")
-    summarize = bool(data.get("summarize", True))
+    summarize = _truthy(data.get("summarize", True))
 
     if not q:
         return jsonify({"error": "Missing 'q'"}), 400
@@ -142,15 +132,18 @@ def web_search():
             bullets.append(f"- {title}\n  {snippet}\n  Source: {href}")
 
         prompt = (
-            "Summarize the key points from these search results in 5–8 bullets. "
-            "Start with a 1-2 sentence 'What to know'. Be neutral and precise. "
-            "End with a compact Sources list (domain + readable title).\n\n"
+            "Write a short, neutral web brief in this exact format:\n"
+            "Title line: '🔎 Web summary (web)'\n"
+            "Then a 1–2 sentence 'What to know'.\n"
+            "Then 5–8 concise bullets of key facts.\n"
+            "Then 'Sources:' followed by 6–8 compact lines (domain + readable title). "
+            "Avoid fluff. Do not duplicate lines. Keep it tight.\n\n"
             f"Query: {q}\n\nResults:\n" + "\n".join(bullets)
         )
 
         try:
-            comp = gclient.chat.completions.create(
-                model="openai/gpt-oss-20b",
+            comp = groq.chat.completions.create(
+                model=SUMMARIZER_MODEL,  # openai/gpt-oss-20b
                 temperature=0.2,
                 max_tokens=700,
                 messages=[
@@ -160,7 +153,21 @@ def web_search():
             )
             answer = comp.choices[0].message.content
         except Exception as e:
-            answer = f"(Summarization failed: {e})"
+            # Fallback minimal summary (no LLM)
+            lines = [f"🔎 Web summary (web)", "", f"What to know: Top {min(8, len(results))} results for '{q}'.", ""]
+            for r in results[:8]:
+                title = r.get("title") or r.get("source") or "Result"
+                href = r.get("href") or r.get("url") or ""
+                snippet = r.get("body") or r.get("excerpt") or r.get("description") or ""
+                lines.append(f"- {title} — {snippet[:200]}".strip())
+                lines.append(f"  Source: {href}")
+            lines.append("")
+            lines.append("Sources:")
+            for r in results[:8]:
+                href = r.get("href") or r.get("url") or ""
+                title = r.get("title") or r.get("source") or href
+                lines.append(f"- {title} — {href}")
+            answer = "\n".join(lines)
 
     return jsonify({
         "query": q,
@@ -169,123 +176,86 @@ def web_search():
         "answer": answer
     })
 
+# ========= Helpers =========
 def _file_to_data_url(fs):
-    """Convert a Flask/Werkzeug FileStorage to a data URL for Groq's image_url."""
     mime = fs.mimetype or mimetypes.guess_type(fs.filename or "")[0] or "image/jpeg"
     fs.stream.seek(0)
     b64 = base64.b64encode(fs.read()).decode("utf-8")
     return f"data:{mime};base64,{b64}"
 
-def _history_to_messages(history_list):
-    """
-    Keep only simple string messages for the model from the UI history.
-    (Skip custom objects like image grids, etc.)
-    """
-    msgs = []
-    for m in history_list:
-      # Expect dicts with role and content
-      role = m.get("role")
-      content = m.get("content")
-      if isinstance(content, str) and role in ("user", "assistant"):
-          msgs.append({"role": role, "content": content})
-    return msgs
+def _stream_text(txt: str, chunk_size: int = 200):
+    s = txt or ""
+    for i in range(0, len(s), chunk_size):
+        yield s[i:i+chunk_size]
 
 # ========= Chat =========
 @app.route("/chat", methods=["POST"])
 def chat():
     global uploaded_context
-
-    # Accept JSON (text-only) OR multipart form (with image)
     is_multipart = request.content_type and request.content_type.startswith("multipart/form-data")
 
     image_fs = None
     web_summary = None
-    selected_label = "Instant"
+    selected_model = "Zyrox O4 Nexus"
     history = []
     user_text_for_image = ""
+    web_search_only = False
 
     if is_multipart:
-        # Multipart: fields come via form, plus optional file
         history_raw = request.form.get("history")
         if history_raw:
             try:
                 history = json.loads(history_raw)
             except Exception:
                 history = []
-
-        selected_label = request.form.get("selected_model") or "Instant"
+        selected_model = request.form.get("selected_model") or "Zyrox O4 Nexus"
         web_summary = request.form.get("web_summary")
+        web_search_only = _truthy(request.form.get("web_search_only"))
         user_text_for_image = (request.form.get("user_text") or "").strip()
         image_fs = request.files.get("image")
     else:
         data = request.get_json(force=True)
         history = data.get("history", [])
-        selected_label = data.get("selected_model", "Instant")
+        selected_model = data.get("selected_model", "Zyrox O4 Nexus")
         web_summary = data.get("web_summary")
-        # No image in JSON flow
+        web_search_only = _truthy(data.get("web_search_only"))
 
-    # Build the base system prompt
-    system_prompt = SYSTEM_PROMPTS.get(selected_label, SYSTEM_PROMPTS["Instant"])
+    # If web-only mode: stream just the summary
+    if web_summary and (web_search_only or SUPPRESS_LLM_WHEN_WEB_SUMMARY):
+        cleaned = web_summary.strip()
+        if not cleaned.startswith("🔎 Web summary (web)"):
+            cleaned = "🔎 Web summary (web)\n\n" + cleaned
+        return Response(_stream_text(cleaned), mimetype="text/plain")
 
-    # Add document context if any
+    # Build system prompt
+    system_prompt = SYSTEM_PROMPTS.get(selected_model, SYSTEM_PROMPTS["Zyrox O4 Nexus"])
     if uploaded_context:
         system_prompt += f"\n\nYou also have access to the following information from a document:\n{uploaded_context}"
-
-    # Include web summary (if provided)
     if web_summary:
         system_prompt += f"\n\nUse these recent web findings when helpful:\n{web_summary}"
 
-    # Start messages
-    messages = [{"role": "system", "content": system_prompt}]
-    messages += _history_to_messages(history)
+    messages = [{"role": "system", "content": system_prompt}] + history
 
-    # Choose model depending on presence of image
-    use_model = "openai/gpt-oss-20b"
+    # Choose model
+    use_model = DEFAULT_GROQ_MODEL  # openai/gpt-oss-20b (text)
     if image_fs:
-        # Append a new user message that includes text + image_url (data URL)
         data_url = _file_to_data_url(image_fs)
-        content_list = []
-        if user_text_for_image:
-            content_list.append({"type": "text", "text": user_text_for_image})
-        else:
-            content_list.append({"type": "text", "text": "What's in this image?"})
-        content_list.append({"type": "image_url", "image_url": {"url": data_url}})
+        content_list = [{"type": "text", "text": user_text_for_image or "What's in this image?"},
+                        {"type": "image_url", "image_url": {"url": data_url}}]
         messages.append({"role": "user", "content": content_list})
-        use_model = "meta-llama/llama-4-scout-17b-16e-instruct"
+        use_model = VISION_MODEL  # Llama 4 Scout for vision
 
-    # Adjust generation behavior by mode (applies to both models)
-    if selected_label == "Instant":
-        temperature = 0.2
-        max_tokens = 256
-    elif selected_label == "DeepThink":
-        temperature = 0.3
-        max_tokens = 1400
-    else:
-        temperature = 0.25
-        max_tokens = 900
-
-    try:
-        completion = gclient.chat.completions.create(
-            model=use_model,
-            messages=messages,
-            stream=True,
-            temperature=temperature,
-            max_tokens=max_tokens
-        )
-    except Exception as e:
-        return Response(f"Error: {e}", mimetype="text/plain", status=500)
+    completion = groq.chat.completions.create(
+        model=use_model,
+        messages=messages,
+        stream=True
+    )
 
     def generate():
-        try:
-            for chunk in completion:
-                delta = getattr(chunk.choices[0], "delta", None)
-                if delta and getattr(delta, "content", None):
-                    yield delta.content
-        except Exception as e:
-            yield f"\n[Stream error: {e}]"
+        for chunk in completion:
+            yield chunk.choices[0].delta.content or ""
 
     return Response(generate(), mimetype="text/plain")
 
 if __name__ == "__main__":
-    # pip install -r: flask flask-cors python-dotenv groq duckduckgo-search pymupdf python-docx
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5000)

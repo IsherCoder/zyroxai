@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <title>Zyrox AI</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
 <style>
 :root{
   --bg:#0b0b0b;
@@ -178,35 +178,43 @@ textarea{
 .img-grid img { width: 100%; height: 100px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); }
 .muted { color: var(--muted); font-size: 0.9rem; }
 
-/* ========= MOBILE SIZING (the “make everything smaller” bit) ========= */
+/* Web controls container and toggle */
+#webControls { display:flex; gap:.5rem; align-items:center; flex-wrap: wrap; }
+#webControlsToggle { display:none; background:transparent; border:1px solid var(--border); color:var(--text); }
+#webControlsToggle:hover{ border-color: var(--accent); color: var(--accent); }
+
+/* ========= MOBILE SIZING & COLLAPSIBLE WEB CONTROLS ========= */
 @media (max-width: 480px){
-  /* Slightly smaller typography & paddings */
-  #topBar { padding: 0.55rem 0.7rem; gap: .5rem; }
-  select { font-size: .85rem; padding: .32rem .5rem; border-radius: 8px; }
-  label { font-size: .9rem; }
-  #layoutToggle { padding: .38rem .6rem; font-size: .85rem; border-radius: 8px; }
-  button { padding: .48rem .8rem; font-size: .9rem; border-radius: 8px; }
-  #newChatBtn { padding: .5rem .8rem; font-size: .9rem; }
-  #sidebar { width: 240px; padding: .75rem; }
-  #chatContainer { padding: 1rem; }
-  .message { font-size: .95rem; line-height: 1.45; padding: .8rem 1rem; border-radius: 12px; }
-  #welcomeBanner { font-size: 1rem; margin-top: 2rem; }
-  .inputPill { padding: .35rem .35rem; }
-  #plusBtn { width: 34px; height: 34px; font-size: 18px; }
-  textarea { font-size: .95rem; height: 2.2rem; padding: .6rem .8rem; }
-  #sendBtn { width: 38px; height: 38px; font-size: 16px; }
-  #fileDisplay { font-size: .7rem; padding: 4px 10px; gap: 8px; }
-  .fileBadge span { font-size: .72rem; }
-  .img-grid { grid-template-columns: repeat(auto-fill, minmax(100px,1fr)); gap: 6px; }
-  .img-grid img { height: 84px; }
+  #topBar { padding: 0.5rem 0.6rem; gap: .45rem; }
+  select { font-size: .82rem; padding: .28rem .46rem; border-radius: 8px; }
+  label { font-size: .85rem; }
+  #layoutToggle { padding: .34rem .54rem; font-size: .82rem; border-radius: 8px; }
+  button { padding: .44rem .7rem; font-size: .86rem; border-radius: 8px; }
+  #newChatBtn { padding: .46rem .72rem; font-size: .88rem; }
+  #sidebar { width: 240px; padding: .7rem; }
+  #chatContainer { padding: 0.85rem; }
+  .message { font-size: .93rem; line-height: 1.42; padding: .75rem .9rem; border-radius: 12px; }
+  #welcomeBanner { font-size: .98rem; margin-top: 1.4rem; }
+  .inputPill { padding: .3rem .3rem; }
+  #plusBtn { width: 32px; height: 32px; font-size: 18px; }
+  textarea { font-size: .92rem; height: 2rem; padding: .5rem .7rem; }
+  #sendBtn { width: 36px; height: 36px; font-size: 16px; }
+  #fileDisplay { font-size: .68rem; padding: 4px 8px; gap: 8px; }
+  .img-grid { grid-template-columns: repeat(auto-fill, minmax(96px,1fr)); gap: 6px; }
+  .img-grid img { height: 80px; }
+
+  /* Collapsible web controls to save space */
+  #webControlsToggle { display:inline-flex; align-items:center; gap:6px; }
+  #webControls { display: none; }
+  #webControls.show { display: flex; }
 }
 
 /* Slightly condensed for small tablets too */
 @media (min-width: 481px) and (max-width: 768px){
   #topBar { padding: 0.65rem 0.8rem; }
   select, button { font-size: .9rem; }
-  #chatContainer { padding: 1.25rem; }
-  .message { font-size: .975rem; }
+  #chatContainer { padding: 1.1rem; }
+  .message { font-size: .96rem; }
 }
 </style>
 
@@ -236,8 +244,10 @@ gtag('config', 'G-BT7DVWBW5Y');
 
 <div id="main">
   <div id="topBar">
-    <div style="display:flex; gap:.5rem; align-items:center;">
+    <div style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
       <button id="hamburger" title="Open chats">☰</button>
+
+      <!-- Model select -->
       <select id="modelSelect" onchange="setModel()">
         <option value="Zyrox O4 Nexus">Zyrox O4 Nexus – Everyday Assistant</option>
         <option value="Zyrox O5 Forge">Zyrox O5 Forge – Coding Expert</option>
@@ -246,27 +256,36 @@ gtag('config', 'G-BT7DVWBW5Y');
         <option value="Zyrox O8 Polyglot">Zyrox O8 Polyglot – Elite Translation Companion</option>
         <option value="Zyrox O9 Ledger">Zyrox O9 Ledger – Finance & Management Guru</option>
       </select>
+
+      <!-- NEW: Response mode select -->
+      <select id="responseMode" title="Response mode">
+        <option value="instant" selected>Instant</option>
+        <option value="deep">Deep Think</option>
+      </select>
     </div>
 
-    <!-- Web Search Controls -->
-    <div style="display:flex; gap:.5rem; align-items:center; flex-wrap: wrap;">
-      <label style="display:flex; align-items:center; gap:.4rem; cursor:pointer;">
-        <input type="checkbox" id="webToggle" />
-        <span>Use Web Search</span>
-      </label>
-      <select id="webMode">
-        <option value="web">Web</option>
-        <option value="news">News</option>
-        <option value="images">Images</option>
-      </select>
-      <select id="webRecency" title="Recency">
-        <option value="">Any time</option>
-        <option value="d">Past day</option>
-        <option value="w">Past week</option>
-        <option value="m">Past month</option>
-        <option value="y">Past year</option>
-      </select>
-      <button id="layoutToggle" title="Toggle Desktop/Mobile">Toggle Layout</button>
+    <!-- Web Search Controls (collapsible on mobile) -->
+    <div style="display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;">
+      <button id="webControlsToggle" title="Show/Hide Web Controls">🔎 Web</button>
+      <div id="webControls">
+        <label style="display:flex; align-items:center; gap:.4rem; cursor:pointer;">
+          <input type="checkbox" id="webToggle" />
+          <span>Use Web Search</span>
+        </label>
+        <select id="webMode" title="Mode">
+          <option value="web">Web</option>
+          <option value="news">News</option>
+          <option value="images">Images</option>
+        </select>
+        <select id="webRecency" title="Recency">
+          <option value="">Any time</option>
+          <option value="d">Past day</option>
+          <option value="w">Past week</option>
+          <option value="m">Past month</option>
+          <option value="y">Past year</option>
+        </select>
+        <button id="layoutToggle" title="Toggle Desktop/Mobile">Toggle Layout</button>
+      </div>
     </div>
   </div>
 
@@ -307,17 +326,22 @@ gtag('config', 'G-BT7DVWBW5Y');
 /* ====== State ====== */
 const chatContainer = document.getElementById('chatContainer');
 const modelSelect = document.getElementById('modelSelect');
+const responseModeSel = document.getElementById('responseMode');
 const input = document.getElementById('userInput');
 const chatList = document.getElementById('chatList');
 
 const webToggle = document.getElementById('webToggle');
 const webModeSel = document.getElementById('webMode');
 const webRecencySel = document.getElementById('webRecency');
+const webControlsToggle = document.getElementById('webControlsToggle');
+const webControls = document.getElementById('webControls');
 
 let chatHistory = [];
 let selectedModel = localStorage.getItem("selectedModel") || "Zyrox O4 Nexus";
+let responseMode = localStorage.getItem("responseMode") || "instant";
 let currentChatId = null;
 modelSelect.value = selectedModel;
+responseModeSel.value = responseMode;
 
 const modelWelcomeMessages = {
   "Zyrox O4 Nexus": "👋 Hey there! I’m Zyrox O4 Nexus – your everyday assistant. Ask me anything.",
@@ -333,6 +357,11 @@ function setModel() {
   localStorage.setItem("selectedModel", selectedModel);
   renderChat();
 }
+
+responseModeSel.addEventListener('change', ()=>{
+  responseMode = responseModeSel.value;
+  localStorage.setItem("responseMode", responseMode);
+});
 
 function saveChat() {
   const allChats = JSON.parse(localStorage.getItem("boltChats") || "{}");
@@ -413,6 +442,32 @@ function renderChat() {
   renderFiles();
 }
 
+function sanitizeText(s) {
+  if (!s) return s;
+  // Normalize em dashes -> simple hyphen with spaces
+  s = s.replace(/—/g, " - ");
+
+  // Collapse excessive hyphens
+  s = s.replace(/ {0,1}-{2,} {0,1}/g, " - ");
+
+  // Remove asterisks and excess underscores (strip markdown noise)
+  s = s.replace(/\*+/g, "");
+  s = s.replace(/_{2,}/g, "_");
+
+  // Compress multiple square brackets (e.g., [[text]] -> [text])
+  s = s.replace(/\[{2,}/g, "[");
+  s = s.replace(/\]{2,}/g, "]");
+
+  // Superscript conversion for simple exponents like n^2, x^-1, 10^3
+  const supMap = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻','+':'⁺'};
+  s = s.replace(/([\w\)\]])\^(-?\d{1,3})/g, (m, base, exp) => {
+    const sup = exp.split('').map(ch => supMap[ch] || ch).join('');
+    return base + sup;
+  });
+
+  return s;
+}
+
 function renderBubble(role, content, type) {
   const bubble = document.createElement("div");
   bubble.className = "message " + (role === "user" ? "user" : "bot");
@@ -432,7 +487,7 @@ function renderBubble(role, content, type) {
     });
     bubble.appendChild(grid);
   } else {
-    bubble.textContent = content;
+    bubble.textContent = sanitizeText(content);
   }
   chatContainer.appendChild(bubble);
 }
@@ -496,7 +551,6 @@ async function sendMessage() {
       const data = await duckSearch(text, mode, timelimit);
 
       if (mode === "images") {
-        // Show image grid bubble
         chatHistory.push({ role: "assistant", content: data.results, type: "images" });
         renderBubble("assistant", data.results, "images");
       } else {
@@ -505,7 +559,6 @@ async function sendMessage() {
         chatHistory.push({ role: "assistant", content: summaryBubble });
         renderBubble("assistant", summaryBubble);
 
-        // Feed the summary to the LLM as extra system context
         web_summary_for_model = summary;
       }
     } catch (e) {
@@ -519,7 +572,12 @@ async function sendMessage() {
   const res = await fetch("/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ history: chatHistory, selected_model: selectedModel, web_summary: web_summary_for_model })
+    body: JSON.stringify({
+      history: chatHistory,
+      selected_model: selectedModel,
+      web_summary: web_summary_for_model,
+      response_mode: responseMode
+    })
   });
 
   const reader = res.body.getReader();
@@ -531,7 +589,7 @@ async function sendMessage() {
     if (done) break;
     const chunk = decoder.decode(value);
     fullText += chunk;
-    bubble.textContent = fullText;
+    bubble.textContent = sanitizeText(fullText);
     chatContainer.scrollTop = chatContainer.scrollHeight;
   }
 
@@ -576,17 +634,13 @@ async function uploadImage() {
     const img = picker.files && picker.files[0];
     if (!img) return;
 
-    // Use current textarea contents as optional caption
     const caption = (input.value || "").trim();
-
-    // Show a user bubble
     const displayText = caption ? `🖼️ ${caption}` : `🖼️ Sent an image: ${img.name}`;
     const userMsg = { role: "user", content: displayText };
     chatHistory.push(userMsg);
     input.value = "";
     renderChat();
 
-    // Prepare streaming bot bubble
     const botMsg = { role: "assistant", content: "" };
     chatHistory.push(botMsg);
     const bubble = document.createElement("div");
@@ -594,23 +648,16 @@ async function uploadImage() {
     chatContainer.appendChild(bubble);
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
-    // Build multipart request to /chat
     const fd = new FormData();
     fd.append("history", JSON.stringify(chatHistory));
     fd.append("selected_model", selectedModel);
     fd.append("user_text", caption);
     fd.append("image", img);
-    // No web summary in image flow for simplicity
+    fd.append("response_mode", responseMode);
 
     try {
-      const res = await fetch("/chat", {
-        method: "POST",
-        body: fd
-      });
-
-      if (!res.ok || !res.body) {
-        throw new Error("Image chat failed");
-      }
+      const res = await fetch("/chat", { method: "POST", body: fd });
+      if (!res.ok || !res.body) throw new Error("Image chat failed");
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -621,7 +668,7 @@ async function uploadImage() {
         if (done) break;
         const chunk = decoder.decode(value);
         fullText += chunk;
-        bubble.textContent = fullText;
+        bubble.textContent = sanitizeText(fullText);
         chatContainer.scrollTop = chatContainer.scrollHeight;
       }
 
@@ -636,7 +683,6 @@ async function uploadImage() {
   };
   picker.click();
 }
-// ====== END added image upload ======
 
 // Enter to send
 input.addEventListener("keydown", (e) => {
@@ -660,7 +706,6 @@ const layoutToggle = document.getElementById('layoutToggle');
 const hamburger = document.getElementById('hamburger');
 const sidebarBackdrop = document.getElementById('sidebarBackdrop');
 
-/* Auto-detect small screens for first load; remember choice thereafter */
 const savedLayout = localStorage.getItem('boltLayout');
 if (savedLayout) {
   if (savedLayout === 'mobile') enableMobileMode(); else enableDesktopMode();
@@ -669,11 +714,8 @@ if (savedLayout) {
 }
 
 layoutToggle.addEventListener('click', ()=>{
-  if (document.body.classList.contains('mobile-mode')) {
-    enableDesktopMode();
-  } else {
-    enableMobileMode();
-  }
+  if (document.body.classList.contains('mobile-mode')) enableDesktopMode();
+  else enableMobileMode();
 });
 
 hamburger.addEventListener('click', ()=>{
@@ -695,6 +737,11 @@ function enableDesktopMode(){
   localStorage.setItem('boltLayout','desktop');
 }
 function closeSidebarMobile(){ document.body.classList.remove('sidebar-open'); }
+
+/* Web controls collapse on mobile */
+webControlsToggle.addEventListener('click', ()=>{
+  webControls.classList.toggle('show');
+});
 
 loadChatList();
 renderChat();

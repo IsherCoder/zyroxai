@@ -216,6 +216,21 @@ textarea{
   #chatContainer { padding: 1.1rem; }
   .message { font-size: .96rem; }
 }
+@supports (-webkit-touch-callout: none) {
+  #inputArea {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: env(safe-area-inset-bottom);
+    background-color: var(--panel-2);
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    z-index: 10;
+  }
+  body {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+}
+
 </style>
 
 <!-- Google tag (gtag.js) -->

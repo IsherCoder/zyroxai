@@ -1,3 +1,4 @@
+```python
 from flask import Flask, request, jsonify, Response, render_template
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -190,9 +191,25 @@ def _last_user_text(history):
     return ""
 
 # ========= Custom Brand Replies =========
-def _quick_reply_override(user_text: str) -> str | None:
+def _quick_reply_override(user_text: str):
     """Intercept Q&A about Zyrox or Abir Singh."""
     t = (user_text or "").lower().strip()
+
+    # NEW: "Powered by" / model questions
+    powered_triggers = (
+        "powered by" in t
+        or "what are you powered by" in t
+        or "what r you powered by" in t
+        or "what is this powered by" in t
+        or "what model are you" in t
+        or "which model are you" in t
+        or "what llm" in t
+        or "which llm" in t
+        or ("what" in t and "model" in t and "use" in t)
+        or ("what" in t and "ai" in t and "use" in t)
+    )
+    if powered_triggers:
+        return "My code is complex but in simple terms I am a merge of multiple LLMs to give you the best possible answer."
 
     if ("who" in t and "made" in t and "zyrox" in t) or ("who" in t and "created" in t and "zyrox" in t):
         return ("Zyrox AI was fully coded by Abir Singh, who magnificently merged three AI models "
@@ -225,8 +242,10 @@ def chat():
     if is_multipart:
         history_raw = request.form.get("history")
         if history_raw:
-            try: history = json.loads(history_raw)
-            except Exception: history = []
+            try:
+                history = json.loads(history_raw)
+            except Exception:
+                history = []
         selected_model = request.form.get("selected_model") or "Zyrox O4 Nexus"
         web_summary = request.form.get("web_summary")
         web_search_only = _truthy(request.form.get("web_search_only"))
@@ -300,3 +319,4 @@ def chat():
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
+```

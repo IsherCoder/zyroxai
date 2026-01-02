@@ -1,4 +1,3 @@
-```python
 from flask import Flask, request, jsonify, Response, render_template
 from openai import OpenAI
 from dotenv import load_dotenv

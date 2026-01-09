@@ -214,7 +214,7 @@ def _quick_reply_override(user_text: str):
     if powered_triggers:
         return "My code is complex but in simple terms I am a merge of multiple LLMs to give you the best possible answer."
 
-    if ("who" in t and "made" in t and "zyrox" in t) or ("who" in t and "created" in t and "zyrox" in t):
+    if ("who" in t and "made" in t and "zyrox" in t) or ("who" in t and "created" in t and "zyrox" in t) or ("who" in t and "made" in t and "you" in t) or ("who" in t and "created" in t and "you" in t):
         return ("Zyrox AI was fully coded by Abir Singh, who magnificently merged three AI models "
                 "to give you the best possible answers every time.")
 

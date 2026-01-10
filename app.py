@@ -1,15 +1,21 @@
-from flask import Flask, request, jsonify, Response, render_template
-from openai import OpenAI
-from dotenv import load_dotenv
 import os
-import fitz  # PyMuPDF for PDFs
-import docx  # python-docx for Word
-from flask_cors import CORS
 import re
 import json
 import base64
 import mimetypes
+import datetime
 from urllib.parse import urlparse
+
+from flask import Flask, request, jsonify, Response, render_template
+from flask_cors import CORS
+from dotenv import load_dotenv
+from openai import OpenAI
+
+import fitz  # PyMuPDF for PDFs
+import docx  # python-docx for Word
+
+import httpx
+from bs4 import BeautifulSoup
 
 # DuckDuckGo Search
 from duckduckgo_search import DDGS
@@ -31,10 +37,9 @@ uploaded_context = ""
 SUPPRESS_LLM_WHEN_WEB_SUMMARY = (os.getenv("SUPPRESS_LLM_WHEN_WEB_SUMMARY", "true").lower()
                                  in ("1", "true", "yes", "y", "on"))
 
-DEFAULT_GROQ_MODEL = os.getenv("DEFAULT_GROQ_MODEL", "openai/gpt-oss-20b")  # normal chat
-DEEP_MODEL         = os.getenv("DEEP_MODEL", "openai/gpt-oss-120b")         # deep think
-SUMMARIZER_MODEL   = os.getenv("SUMMARIZER_MODEL", "openai/gpt-oss-120b")   # web summary
-VISION_MODEL       = os.getenv("VISION_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")  # images
+DEFAULT_GROQ_MODEL = os.getenv("DEFAULT_GROQ_MODEL", "openai/gpt-oss-20b")          # chat text
+SUMMARIZER_MODEL   = os.getenv("SUMMARIZER_MODEL",   "openai/gpt-oss-120b")         # web_summary
+VISION_MODEL       = os.getenv("VISION_MODEL",       "meta-llama/llama-4-scout-17b-16e-instruct")  # images
 
 SYSTEM_PROMPTS = {
     "Zyrox O4 Nexus": "You are Zyrox O4 Nexus, an efficient, friendly AI assistant that helps with any task in a concise and smart way. Always be helpful and clear.",
@@ -52,16 +57,15 @@ Identity and provenance rules:
 - If asked who made Zyrox, say it was built by Abir Singh and the Zyrox team.
 - If asked what powers Zyrox, say it uses third-party language models accessed via an API provider.
 - Never claim you were created by OpenAI or ChatGPT.
-""".strip()
+"""
 
-
+# ========= Utilities =========
 def _truthy(v):
     if v is None:
         return False
     if isinstance(v, bool):
         return v
     return str(v).strip().lower() in ("1", "true", "yes", "y", "on")
-
 
 def sanitize_text(s: str) -> str:
     """Lightly clean up model text"""
@@ -74,30 +78,88 @@ def sanitize_text(s: str) -> str:
     s = re.sub(r"\[{2,}", "[", s)
     s = re.sub(r"\]{2,}", "]", s)
 
-    sup_map = {"0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵",
-               "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "-": "⁻", "+": "⁺"}
-
+    # Superscript conversion for simple exponents like n^2, x^-1, 10^3
+    sup_map = {"0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹","-":"⁻","+":"⁺"}
     def _to_sup(match):
         base = match.group("base")
-        exp = match.group("exp")
-        sup = "".join(sup_map.get(ch, ch) for ch in exp)
+        exp  = match.group("exp")
+        sup  = "".join(sup_map.get(ch, ch) for ch in exp)
         return f"{base}{sup}"
-
     s = re.sub(r"(?P<base>[\w\)\]])\^(?P<exp>-?\d{1,3})", _to_sup, s)
     return s
 
+def _stream_text(txt: str, chunk_size: int = 200):
+    s = txt or ""
+    for i in range(0, len(s), chunk_size):
+        yield s[i:i+chunk_size]
 
+def _file_to_data_url(fs):
+    mime = fs.mimetype or mimetypes.guess_type(fs.filename or "")[0] or "image/jpeg"
+    fs.stream.seek(0)
+    b64 = base64.b64encode(fs.read()).decode("utf-8")
+    return f"data:{mime};base64,{b64}"
+
+def _last_user_text(history):
+    for msg in reversed(history):
+        if msg.get("role") == "user":
+            c = msg.get("content")
+            if isinstance(c, str):
+                return c.strip()
+    return ""
+
+def _domain(u: str) -> str:
+    try:
+        host = urlparse(u).netloc.lower()
+        return host[4:] if host.startswith("www.") else host
+    except Exception:
+        return ""
+
+def _looks_like_weather_query(q: str) -> bool:
+    t = (q or "").lower()
+    triggers = [
+        "weather", "forecast", "temperature", "rain", "snow", "wind",
+        "met office", "humidity", "uv index", "storm", "sunrise", "sunset"
+    ]
+    return any(k in t for k in triggers)
+
+def _fetch_page_text(url: str, timeout_s: int = 10, max_chars: int = 12000) -> str:
+    """
+    Fetch HTML and extract readable text.
+    Conservative to avoid timeouts and huge pages on Render.
+    """
+    if not url:
+        return ""
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; Milo/ZyroxWebFetcher)"
+    }
+
+    try:
+        with httpx.Client(follow_redirects=True, timeout=timeout_s, headers=headers) as client:
+            r = client.get(url)
+            if r.status_code != 200 or not r.text:
+                return ""
+
+        soup = BeautifulSoup(r.text, "lxml")
+
+        # Remove noisy elements
+        for tag in soup(["script", "style", "noscript", "header", "footer", "nav", "aside", "form"]):
+            tag.decompose()
+
+        # Prefer <article> if present
+        article = soup.find("article")
+        text_source = article.get_text(" ", strip=True) if article else soup.get_text(" ", strip=True)
+
+        # Compress whitespace and clamp size
+        text_source = re.sub(r"\s+", " ", text_source).strip()
+        return text_source[:max_chars]
+    except Exception:
+        return ""
+
+# ========= Routes =========
 @app.route("/")
 def index():
     return render_template("index.html")
-
-
-@app.route("/favicon.ico")
-def favicon():
-    # If you later add a real file at static/favicon.ico, use: return send_from_directory(app.static_folder, "favicon.ico")
-    # For now, redirect to your hosted logo
-    return ("", 302, {"Location": "https://i.postimg.cc/Kz82Wdg5/bolt-logo.png"})
-
 
 # ========= Upload =========
 @app.route("/upload", methods=["POST"])
@@ -107,177 +169,187 @@ def upload_file():
     if not file:
         return jsonify({"error": "No file uploaded"}), 400
 
-    name = (file.filename or "").lower()
-    if name.endswith(".pdf"):
+    if file.filename.lower().endswith(".pdf"):
         doc = fitz.open(stream=file.read(), filetype="pdf")
         text = "\n".join([page.get_text() for page in doc])
-    elif name.endswith(".docx"):
+    elif file.filename.lower().endswith(".docx"):
         d = docx.Document(file)
         text = "\n".join([para.text for para in d.paragraphs])
     else:
         return jsonify({"error": "Unsupported file type"}), 400
 
-    uploaded_context = (text or "")[:10000]
+    uploaded_context = text[:10000]
     return jsonify({"extracted_text": uploaded_context})
 
-
 # ========= DuckDuckGo helpers =========
-def _ddg_text(q, max_results=8, region="uk-en", safesearch="moderate", timelimit=None):
+def _ddg_text(q, max_results=10, region="uk-en", safesearch="moderate", timelimit=None):
     with DDGS() as ddgs:
         return list(ddgs.text(keywords=q, region=region, safesearch=safesearch,
                               timelimit=timelimit, max_results=max_results))
 
-
-def _ddg_news(q, max_results=8, region="uk-en", safesearch="moderate", timelimit=None):
+def _ddg_news(q, max_results=10, region="uk-en", safesearch="moderate", timelimit=None):
     with DDGS() as ddgs:
         return list(ddgs.news(keywords=q, region=region, safesearch=safesearch,
                               timelimit=timelimit, max_results=max_results))
 
-
-def _ddg_images(q, max_results=8, region="uk-en", safesearch="moderate"):
+def _ddg_images(q, max_results=10, region="uk-en", safesearch="moderate"):
     with DDGS() as ddgs:
         return list(ddgs.images(keywords=q, region=region, safesearch=safesearch,
                                 max_results=max_results))
 
-
-# ========= Web Search =========
+# ========= Web Search (improved: fetch pages + summarise) =========
 @app.route("/web_search", methods=["POST"])
 def web_search():
     data = request.get_json(force=True) or {}
     q = (data.get("q") or "").strip()
     mode = (data.get("mode") or "web").lower()
-    max_results = int(data.get("max_results") or 8)
+    max_results = int(data.get("max_results") or 10)
     region = data.get("region") or "uk-en"
     safesearch = data.get("safesearch") or "moderate"
     timelimit = data.get("timelimit")
     summarize = _truthy(data.get("summarize", True))
 
+    # Hard rule: no weather fetching in this build
+    if _looks_like_weather_query(q):
+        return jsonify({
+            "query": q,
+            "mode": mode,
+            "results": [],
+            "answer": "Weather requests are disabled in this build. Please ask a non-weather question."
+        }), 200
+
     if not q:
         return jsonify({"error": "Missing 'q'"}), 400
 
+    # 1) Search DDG
     try:
         if mode == "web":
-            results = _ddg_text(q, max_results, region, safesearch, timelimit)
+            results = _ddg_text(q, max_results=max_results, region=region, safesearch=safesearch, timelimit=timelimit)
         elif mode == "news":
-            results = _ddg_news(q, max_results, region, safesearch, timelimit)
+            results = _ddg_news(q, max_results=max_results, region=region, safesearch=safesearch, timelimit=timelimit)
         elif mode == "images":
-            results = _ddg_images(q, max_results, region, safesearch)
+            results = _ddg_images(q, max_results=max_results, region=region, safesearch=safesearch)
         else:
             return jsonify({"error": "Invalid mode"}), 400
     except Exception as e:
         return jsonify({"error": f"Search failed: {e}"}), 500
 
-    answer = None
-    if summarize and mode in ("web", "news"):
-        bullets = []
+    # Images: no summary
+    if mode == "images":
+        return jsonify({"query": q, "mode": mode, "results": results, "answer": None})
+
+    # No summary requested: return raw results
+    if not summarize:
+        return jsonify({"query": q, "mode": mode, "results": results, "answer": None})
+
+    # 2) Fetch top pages and extract text
+    MAX_PAGES = int(os.getenv("WEB_FETCH_PAGES", "6"))
+    pages = []
+
+    for r in results:
+        url = r.get("href") or r.get("url") or ""
+        title = r.get("title") or r.get("source") or "Result"
+        snippet = r.get("body") or r.get("excerpt") or r.get("description") or ""
+        if not url:
+            continue
+
+        text = _fetch_page_text(url)
+        if text:
+            pages.append({
+                "title": title,
+                "url": url,
+                "domain": _domain(url),
+                "snippet": snippet,
+                "content": text
+            })
+
+        if len(pages) >= MAX_PAGES:
+            break
+
+    today = datetime.date.today().isoformat()
+
+    # Fallback if page fetch failed: summarise snippets only
+    if not pages:
+        lines = [f"Web summary", f"What to know: Could not fetch page text; summarised snippets only (as of {today}).", ""]
         for r in results[:8]:
             title = r.get("title") or r.get("source") or "Result"
-            href = r.get("href") or r.get("url") or ""
-            snippet = r.get("body") or r.get("excerpt") or r.get("description") or ""
-            bullets.append(f"- {title}\n  {snippet}\n  Source: {href}")
+            url = r.get("href") or r.get("url") or ""
+            body = r.get("body") or r.get("excerpt") or r.get("description") or ""
+            lines.append(f"- {title}: {body[:220]}".strip())
+            if url:
+                lines.append(f"  Source: {url}")
+        return jsonify({"query": q, "mode": mode, "results": results, "answer": sanitize_text("\n".join(lines))}), 200
 
-        prompt = (
-            "Write a short, neutral web brief in this exact format:\n"
-            "Title line: 'Web summary'\n"
-            "Then a 1–2 sentence 'What to know'.\n"
-            "Then 5–8 concise bullets of key facts.\n"
-            "Then 'Sources:' followed by compact domain lines.\n\n"
-            f"Query: {q}\n\nResults:\n" + "\n".join(bullets)
+    # 3) Summarise using Groq with today's date included
+    source_blocks = []
+    for i, p in enumerate(pages, start=1):
+        source_blocks.append(
+            f"[{i}] {p['title']}\nURL: {p['url']}\nDomain: {p['domain']}\nExtract: {p['content']}\n"
         )
 
-        try:
-            comp = groq.chat.completions.create(
-                model=SUMMARIZER_MODEL,
-                temperature=0.2,
-                max_tokens=700,
-                messages=[
-                    {"role": "system", "content": "You are a concise research assistant. Avoid asterisks and em dashes."},
-                    {"role": "user", "content": prompt}
-                ],
-            )
-            answer = sanitize_text(comp.choices[0].message.content)
-        except Exception:
-            lines = ["Web summary", "", f"What to know: Top {min(8, len(results))} results for '{q}'.", ""]
-            for r in results[:8]:
-                title = r.get("title") or r.get("source") or "Result"
-                href = r.get("href") or r.get("url") or ""
-                snippet = r.get("body") or r.get("excerpt") or r.get("description") or ""
-                lines.append(f"- {title} - {snippet[:200]}".strip())
-                lines.append(f"  Source: {href}")
-            answer = sanitize_text("\n".join(lines))
+    prompt = (
+        f"As of {today}, summarise the topic using only the provided sources.\n\n"
+        "Output rules:\n"
+        "- Start with: 'Web summary'\n"
+        "- Then 1–2 sentences: 'What to know'\n"
+        "- Then 6–10 bullet points of key facts (flat list)\n"
+        "- Then 'Sources:' with one line per domain\n"
+        "- Do not mention internal tools.\n\n"
+        f"Query: {q}\n\n"
+        "Sources:\n" + "\n\n".join(source_blocks)
+    )
 
-    return jsonify({"query": q, "mode": mode, "results": results, "answer": answer})
-
-
-# ========= Helpers =========
-def _file_to_data_url(fs):
-    mime = fs.mimetype or mimetypes.guess_type(fs.filename or "")[0] or "image/jpeg"
-    fs.stream.seek(0)
-    b64 = base64.b64encode(fs.read()).decode("utf-8")
-    return f"data:{mime};base64,{b64}"
-
-
-def _stream_text(txt: str, chunk_size: int = 200):
-    s = txt or ""
-    for i in range(0, len(s), chunk_size):
-        yield s[i:i + chunk_size]
-
-
-def _last_user_text(history):
-    for msg in reversed(history or []):
-        if msg.get("role") == "user":
-            c = msg.get("content")
-            if isinstance(c, str):
-                return c.strip()
-    return ""
-
-
-def _extract_domains(results):
-    domains = []
-    for r in results[:10]:
-        u = r.get("href") or r.get("url") or ""
-        if not u:
-            continue
-        try:
-            host = urlparse(u).netloc.lower()
-            if host.startswith("www."):
-                host = host[4:]
-            if host and host not in domains:
-                domains.append(host)
-        except Exception:
-            pass
-    return domains
-
+    try:
+        comp = groq.chat.completions.create(
+            model=SUMMARIZER_MODEL,
+            temperature=0.2,
+            max_tokens=900,
+            messages=[
+                {"role": "system", "content": "You are a neutral research summariser. Be factual. Avoid emojis and em dashes."},
+                {"role": "user", "content": prompt}
+            ],
+        )
+        answer = sanitize_text(comp.choices[0].message.content)
+        domains = sorted({p["domain"] for p in pages if p["domain"]})
+        return jsonify({"query": q, "mode": mode, "results": results, "answer": answer, "domains": domains}), 200
+    except Exception as e:
+        return jsonify({"error": f"Summariser failed: {e}"}), 500
 
 # ========= Custom Brand Replies =========
 def _quick_reply_override(user_text: str):
     """
-    Optional intercepts for brand identity.
-    Keep this short and aligned with IDENTITY rules.
+    Intercept Q&A about Zyrox identity/power.
+    Keeps it vendor-neutral and avoids provider mentions unless explicitly asked.
     """
     t = (user_text or "").lower().strip()
 
     powered_triggers = (
         "powered by" in t
+        or "what are you powered by" in t
+        or "what r you powered by" in t
+        or "what is this powered by" in t
         or "what model are you" in t
         or "which model are you" in t
         or "what llm" in t
         or "which llm" in t
         or ("what" in t and "model" in t and "use" in t)
+        or ("what" in t and "ai" in t and "use" in t)
     )
     if powered_triggers:
         return "Zyrox uses third-party language models accessed via an API provider."
 
-    maker_triggers = (
+    made_triggers = (
         ("who" in t and "made" in t and ("zyrox" in t or "you" in t))
         or ("who" in t and "created" in t and ("zyrox" in t or "you" in t))
         or ("who built" in t and ("zyrox" in t or "you" in t))
     )
-    if maker_triggers:
+    if made_triggers:
         return "Zyrox was built by Abir Singh and the Zyrox team."
 
-    return None
+    if "who is" in t and "abir" in t and "singh" in t:
+        return "Abir Singh is the Founder and CEO of Zyrox."
 
+    return None
 
 # ========= Chat =========
 @app.route("/chat", methods=["POST"])
@@ -294,7 +366,7 @@ def chat():
 
     response_mode = (
         request.form.get("response_mode") if is_multipart else
-        ((request.get_json(force=True) or {}).get("response_mode") if request.data else None)
+        (request.get_json(force=True).get("response_mode") if request.data else None)
     ) or "instant"
     response_mode = response_mode.lower().strip()
 
@@ -317,11 +389,9 @@ def chat():
         web_summary = data.get("web_summary")
         web_search_only = _truthy(data.get("web_search_only"))
 
-    # Web-only mode
+    # Web-only mode (optional)
     if web_summary and (web_search_only or SUPPRESS_LLM_WHEN_WEB_SUMMARY):
         cleaned = web_summary.strip()
-        if not cleaned.lower().startswith("web summary"):
-            cleaned = "Web summary\n\n" + cleaned
         return Response(_stream_text(sanitize_text(cleaned)), mimetype="text/plain")
 
     # Brand intercept
@@ -337,28 +407,14 @@ def chat():
         + IDENTITY_AND_PROVENANCE_RULES
     )
 
-    # Output formatting rules to improve layout (tables, headings, spacing)
-    system_prompt += """
-Output formatting rules:
-- Use Markdown.
-- Use level-2 headers (##) only when you genuinely need sections.
-- Prefer a Markdown table for comparisons (2+ items).
-- Use flat lists only (no nested lists).
-- Keep paragraphs short, with a blank line between paragraphs.
-- Do not use emojis.
-""".strip()
-
-    # Mode config
     if response_mode == "instant":
         mode_instructions = "CRITICAL STYLE: Reply in 1–4 short sentences. Be direct and concise."
         temperature = 0.2
         max_tokens = 350
-        use_model = DEFAULT_GROQ_MODEL
     else:
         mode_instructions = "CRITICAL STYLE: Provide a thorough, well-structured answer. Use simple punctuation."
         temperature = 0.6
         max_tokens = 1200
-        use_model = DEEP_MODEL  # Deep Think -> 120b
 
     system_prompt += "\n\n" + mode_instructions
 
@@ -368,9 +424,10 @@ Output formatting rules:
     if web_summary:
         system_prompt += f"\n\nUse these recent web findings:\n{web_summary}"
 
-    messages = [{"role": "system", "content": system_prompt}] + (history or [])
+    messages = [{"role": "system", "content": system_prompt}] + history
 
-    # Image mode
+    use_model = DEFAULT_GROQ_MODEL
+
     if image_fs:
         data_url = _file_to_data_url(image_fs)
         messages.append({
@@ -397,7 +454,6 @@ Output formatting rules:
                 yield sanitize_text(piece)
 
     return Response(generate(), mimetype="text/plain")
-
 
 if __name__ == "__main__":
     # Render uses PORT env var
